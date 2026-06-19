@@ -40,6 +40,7 @@ From this directory:
 php tools/smoke.php
 php tools/plugin-corpus-smoke.php
 php tools/ipc-smoke.php
+php tools/bridge-action-audit.php
 php -d phar.readonly=0 tools/phar-smoke.php
 ```
 
@@ -59,6 +60,8 @@ The Go adapter in `host/go` drives the PHP runtime process over JSON lines:
 
 ```bash
 cd host/go
+go test ./...
+cd ../dragonfly
 go test ./...
 ```
 
