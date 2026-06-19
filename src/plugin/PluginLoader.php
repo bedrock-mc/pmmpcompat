@@ -12,7 +12,7 @@ class PluginLoader
 
     public function canLoadPlugin(string $path): bool
     {
-        return (is_dir($path) && is_file($path . DIRECTORY_SEPARATOR . 'plugin.yml')) || (is_file($path) && str_ends_with(strtolower($path), '.phar'));
+        return (is_dir($path) && $this->pluginYmlPath($path) !== null) || (is_file($path) && str_ends_with(strtolower($path), '.phar'));
     }
 
     public function loadPlugin(string $file): void
@@ -22,12 +22,13 @@ class PluginLoader
 
     public function getPluginDescription(string $file): ?PluginDescription
     {
-        if (is_dir($file) && is_file($file . DIRECTORY_SEPARATOR . 'plugin.yml')) {
-            return PluginDescription::fromFile($file . DIRECTORY_SEPARATOR . 'plugin.yml');
+        if (is_dir($file) && ($pluginYml = $this->pluginYmlPath($file)) !== null) {
+            return PluginDescription::fromFile($pluginYml);
         }
         if (is_file($file) && str_ends_with(strtolower($file), '.phar') && class_exists(\Phar::class)) {
             $phar = new \Phar($file);
-            return $phar->offsetExists('plugin.yml') ? new PluginDescription(PluginDescription::parseString((string) $phar['plugin.yml']->getContent())) : null;
+            $pluginYml = $this->pharPluginYmlPath($phar);
+            return $pluginYml !== null ? new PluginDescription(PluginDescription::parseString((string) $phar[$pluginYml]->getContent())) : null;
         }
         return null;
     }
@@ -49,7 +50,7 @@ class PluginLoader
                 continue;
             }
             $path = $pluginsDir . DIRECTORY_SEPARATOR . $entry;
-            if (is_dir($path) && is_file($path . DIRECTORY_SEPARATOR . 'plugin.yml')) {
+            if (is_dir($path) && $this->pluginYmlPath($path) !== null) {
                 $plugins[] = $this->loadFolder($path, false);
             } elseif (is_file($path) && str_ends_with(strtolower($path), '.phar')) {
                 $plugins[] = $this->loadPhar($path, false);
@@ -71,19 +72,18 @@ class PluginLoader
 
     public function loadFolder(string $path, bool $register = true): PluginBase
     {
-        $description = PluginDescription::fromFile($path . DIRECTORY_SEPARATOR . 'plugin.yml');
+        $pluginYml = $this->pluginYmlPath($path);
+        if ($pluginYml === null) {
+            throw new \RuntimeException("plugin.yml not found in plugin folder: {$path}");
+        }
+        $description = PluginDescription::fromFile($pluginYml);
         $main = $description->getMain();
         if ($main === '') {
             throw new \RuntimeException("Plugin {$path} has no main class.");
         }
         $src = $path . DIRECTORY_SEPARATOR . 'src';
         if (is_dir($src)) {
-            $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($src));
-            foreach ($files as $file) {
-                if ($file instanceof \SplFileInfo && $file->isFile() && $file->getExtension() === 'php') {
-                    require_once $file->getPathname();
-                }
-            }
+            $this->registerSourceAutoloader($src, $description);
         }
         if (!class_exists($main)) {
             throw new \RuntimeException("Plugin main class not found: {$main}");
@@ -105,18 +105,14 @@ class PluginLoader
             throw new \RuntimeException('PHP Phar extension is required to load PMMP phar plugins.');
         }
         $phar = new \Phar($path);
-        if (!$phar->offsetExists('plugin.yml')) {
+        $pluginYml = $this->pharPluginYmlPath($phar);
+        if ($pluginYml === null) {
             throw new \RuntimeException("plugin.yml not found in phar: {$path}");
         }
-        $description = new PluginDescription(PluginDescription::parseString((string) $phar['plugin.yml']->getContent()));
+        $description = new PluginDescription(PluginDescription::parseString((string) $phar[$pluginYml]->getContent()));
         $prefix = 'phar://' . $path . '/src';
         if (is_dir($prefix)) {
-            $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($prefix));
-            foreach ($files as $file) {
-                if ($file instanceof \SplFileInfo && $file->isFile() && $file->getExtension() === 'php') {
-                    require_once $file->getPathname();
-                }
-            }
+            $this->registerSourceAutoloader($prefix, $description);
         }
         $main = $description->getMain();
         if (!class_exists($main)) {
@@ -132,6 +128,52 @@ class PluginLoader
             $this->server->getPluginManager()->registerPlugin($plugin);
         }
         return $plugin;
+    }
+
+    private function pluginYmlPath(string $path): ?string
+    {
+        foreach (['plugin.yml', 'Plugin.yml', 'plugin.yaml', 'Plugin.yaml'] as $name) {
+            $candidate = $path . DIRECTORY_SEPARATOR . $name;
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+        return null;
+    }
+
+    private function pharPluginYmlPath(\Phar $phar): ?string
+    {
+        foreach (['plugin.yml', 'Plugin.yml', 'plugin.yaml', 'Plugin.yaml'] as $name) {
+            if ($phar->offsetExists($name)) {
+                return $name;
+            }
+        }
+        return null;
+    }
+
+    private function registerSourceAutoloader(string $src, PluginDescription $description): void
+    {
+        $prefix = trim($description->getSrcNamespacePrefix(), '\\');
+        $prefix = $prefix === '' ? '' : $prefix . '\\';
+        $root = rtrim($src, '/\\');
+
+        spl_autoload_register(static function (string $class) use ($root, $prefix): void {
+            $trimmed = ltrim($class, '\\');
+            if ($prefix !== '' && !str_starts_with($trimmed, $prefix)) {
+                return;
+            }
+            $relativePaths = [$trimmed];
+            if ($prefix !== '') {
+                $relativePaths[] = substr($trimmed, strlen($prefix));
+            }
+            foreach (array_unique($relativePaths) as $relative) {
+                $file = $root . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, $relative) . '.php';
+                if (is_file($file)) {
+                    require_once $file;
+                    return;
+                }
+            }
+        });
     }
 
     /** @param PluginBase[] $plugins @return PluginBase[] */

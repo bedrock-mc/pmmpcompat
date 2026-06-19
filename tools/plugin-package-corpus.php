@@ -88,7 +88,7 @@ function installCorpusPath(string $path, string $pluginsDir): void
         return;
     }
 
-    if (is_file($path . DIRECTORY_SEPARATOR . 'plugin.yml')) {
+    if (pluginYmlPath($path) !== null) {
         copyTree($path, $pluginsDir . DIRECTORY_SEPARATOR . basename($path));
         return;
     }
@@ -99,7 +99,7 @@ function installCorpusPath(string $path, string $pluginsDir): void
             continue;
         }
         $child = $path . DIRECTORY_SEPARATOR . $entry;
-        if (is_dir($child) && is_file($child . DIRECTORY_SEPARATOR . 'plugin.yml')) {
+        if (is_dir($child) && pluginYmlPath($child) !== null) {
             copyTree($child, $pluginsDir . DIRECTORY_SEPARATOR . basename($child));
             $installed++;
         } elseif (is_file($child) && str_ends_with(strtolower($child), '.phar')) {
@@ -162,6 +162,17 @@ PHP;
     $phar->setStub("<?php __HALT_COMPILER();");
 
     return [$root . '/FolderPlugin', $root . '/Bundle'];
+}
+
+function pluginYmlPath(string $path): ?string
+{
+    foreach (['plugin.yml', 'Plugin.yml', 'plugin.yaml', 'Plugin.yaml'] as $name) {
+        $candidate = $path . DIRECTORY_SEPARATOR . $name;
+        if (is_file($candidate)) {
+            return $candidate;
+        }
+    }
+    return null;
 }
 
 function copyTree(string $src, string $dst): void

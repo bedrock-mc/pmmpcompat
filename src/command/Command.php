@@ -148,7 +148,7 @@ class Command
     }
 
     /** @param string[] $args */
-    public function execute(CommandSender $sender, string $label, array $args): bool
+    public function execute(CommandSender $sender, string $label, array $args)
     {
         return false;
     }

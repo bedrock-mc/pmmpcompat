@@ -205,6 +205,58 @@ final class PocketMineCompatTest extends TestCase
         self::assertSame('AlphaPlugin', $server->getPluginManager()->getPlugins()[0]->getName());
     }
 
+    public function testLoaderAcceptsRealWorldManifestAndAutoloadPatterns(): void
+    {
+        $server = new Server();
+        $root = sys_get_temp_dir() . '/pmmpcompat-loader-real-' . getmypid();
+        @mkdir($root . '/src/RealWorld/Event', 0777, true);
+        @mkdir($root . '/src/RealWorld/Command', 0777, true);
+        file_put_contents($root . '/Plugin.yml', <<<'YAML'
+name: RealWorldPlugin
+main: RealWorld\RealWorldPlugin
+version: 1.0.0
+commands:
+  real:
+    description: Real command
+YAML);
+        file_put_contents($root . '/src/RealWorld/Event/ChildEvent.php', <<<'PHP'
+<?php
+namespace RealWorld\Event;
+class ChildEvent extends ParentEvent {}
+PHP);
+        file_put_contents($root . '/src/RealWorld/Event/ParentEvent.php', <<<'PHP'
+<?php
+namespace RealWorld\Event;
+class ParentEvent extends \pocketmine\event\Event {}
+PHP);
+        file_put_contents($root . '/src/RealWorld/Command/RealCommand.php', <<<'PHP'
+<?php
+namespace RealWorld\Command;
+class RealCommand extends \pocketmine\command\Command {
+    public function execute(\pocketmine\command\CommandSender $sender, string $commandLabel, array $args) {
+        $sender->sendMessage('real');
+        return true;
+    }
+}
+PHP);
+        file_put_contents($root . '/src/RealWorld/RealWorldPlugin.php', <<<'PHP'
+<?php
+namespace RealWorld;
+class RealWorldPlugin extends \pocketmine\plugin\PluginBase {
+    protected function onEnable(): void {
+        new \RealWorld\Event\ChildEvent();
+        $this->getServer()->getCommandMap()->register('real', new \RealWorld\Command\RealCommand('real'));
+    }
+}
+PHP);
+
+        $plugin = (new PluginLoader($server))->loadFolder($root);
+        $plugin->__pmmpCallEnable();
+
+        self::assertSame('RealWorldPlugin', $plugin->getName());
+        self::assertNotNull($server->getCommandMap()->getCommand('real'));
+    }
+
     private function fixturePlugin(): string
     {
         $dir = sys_get_temp_dir() . '/pmmp-compat-fixture-' . getmypid();
