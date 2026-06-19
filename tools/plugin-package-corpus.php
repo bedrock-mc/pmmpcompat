@@ -8,8 +8,13 @@ use pocketmine\compat\Runtime;
 use pocketmine\Server;
 
 $args = array_values(array_slice($argv, 1));
+$keepGoing = false;
+if (($idx = array_search('--keep-going', $args, true)) !== false) {
+    $keepGoing = true;
+    array_splice($args, $idx, 1);
+}
 if ($args === [] || in_array('--help', $args, true) || in_array('-h', $args, true)) {
-    fwrite(STDERR, "Usage: php -d phar.readonly=0 tools/plugin-package-corpus.php --self-test|<plugin-folder|plugin.phar|plugins-dir> [...]\n");
+    fwrite(STDERR, "Usage: php -d phar.readonly=0 tools/plugin-package-corpus.php [--keep-going] --self-test|<plugin-folder|plugin.phar|plugins-dir> [...]\n");
     exit($args === [] ? 1 : 0);
 }
 
@@ -28,8 +33,12 @@ foreach ($args as $path) {
         $results[] = [
             'path' => $path,
             'ok' => false,
+            'classification' => classifyFailure($e),
             'error' => $e::class . ': ' . $e->getMessage(),
         ];
+        if (!$keepGoing) {
+            break;
+        }
     }
 }
 
@@ -112,6 +121,21 @@ function installCorpusPath(string $path, string $pluginsDir): void
     }
 }
 
+function classifyFailure(Throwable $e): string
+{
+    $message = $e->getMessage();
+    if (str_contains($message, 'Class "') && str_contains($message, '" not found')) {
+        return 'missing-class-or-dependency';
+    }
+    if (str_contains($message, 'Plugin main class not found')) {
+        return 'invalid-plugin-main';
+    }
+    if (str_contains($message, 'No plugin folders or phars found') || str_contains($message, 'Unsupported plugin file')) {
+        return 'not-a-plugin-package';
+    }
+    return 'runtime-error';
+}
+
 /** @return list<string> */
 function createSelfTestCorpus(): array
 {
@@ -186,6 +210,10 @@ function copyTree(string $src, string $dst): void
         } else {
             copy($file->getPathname(), $target);
         }
+    }
+    $vendorAutoload = $dst . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
+    if (is_file($vendorAutoload)) {
+        require_once $vendorAutoload;
     }
 }
 

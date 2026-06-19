@@ -85,6 +85,10 @@ class PluginLoader
         if (is_dir($src)) {
             $this->registerSourceAutoloader($src, $description);
         }
+        $vendorAutoload = $path . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
+        if (is_file($vendorAutoload)) {
+            require_once $vendorAutoload;
+        }
         if (!class_exists($main)) {
             throw new \RuntimeException("Plugin main class not found: {$main}");
         }

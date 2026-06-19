@@ -257,6 +257,49 @@ PHP);
         self::assertNotNull($server->getCommandMap()->getCommand('real'));
     }
 
+    public function testLoaderIncludesPluginVendorAutoload(): void
+    {
+        $server = new Server();
+        $root = sys_get_temp_dir() . '/pmmpcompat-loader-vendor-' . getmypid();
+        @mkdir($root . '/src/VendorFixture', 0777, true);
+        @mkdir($root . '/vendor/ExternalLib', 0777, true);
+        file_put_contents($root . '/plugin.yml', <<<'YAML'
+name: VendorFixture
+main: VendorFixture\VendorPlugin
+version: 1.0.0
+YAML);
+        file_put_contents($root . '/vendor/autoload.php', <<<'PHP'
+<?php
+spl_autoload_register(static function(string $class): void{
+    if($class === 'ExternalLib\\Thing'){
+        require __DIR__ . '/ExternalLib/Thing.php';
+    }
+});
+PHP);
+        file_put_contents($root . '/vendor/ExternalLib/Thing.php', <<<'PHP'
+<?php
+namespace ExternalLib;
+final class Thing{
+    public static function value(): string{ return 'vendor-ok'; }
+}
+PHP);
+        file_put_contents($root . '/src/VendorFixture/VendorPlugin.php', <<<'PHP'
+<?php
+namespace VendorFixture;
+class VendorPlugin extends \pocketmine\plugin\PluginBase{
+    public string $value = '';
+    protected function onEnable(): void{
+        $this->value = \ExternalLib\Thing::value();
+    }
+}
+PHP);
+
+        $plugin = (new PluginLoader($server))->loadFolder($root);
+        $plugin->__pmmpCallEnable();
+
+        self::assertSame('vendor-ok', $plugin->value);
+    }
+
     private function fixturePlugin(): string
     {
         $dir = sys_get_temp_dir() . '/pmmp-compat-fixture-' . getmypid();
