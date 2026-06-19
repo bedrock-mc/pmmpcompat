@@ -45,11 +45,13 @@ final class PocketMineCompatTest extends TestCase
     {
         $server = new Server();
         $loader = new PluginLoader($server);
-        $plugin = $loader->loadFolder($this->fixturePlugin());
+        $path = $this->fixturePlugin();
+        $plugin = $loader->loadFolder($path);
 
         $plugin->__pmmpCallLoad();
         $plugin->__pmmpCallEnable();
 
+        self::assertSame($path, $plugin->getFile());
         self::assertTrue($plugin->loaded);
         self::assertTrue($plugin->enabled);
         self::assertNotNull($server->getCommandMap()->getCommand('hello'));
@@ -127,19 +129,30 @@ final class PocketMineCompatTest extends TestCase
         self::assertSame(2, $runs);
         $scheduler->mainThreadHeartbeat(8);
         self::assertSame(3, $runs);
+
+        $sleeperEntry = (new Server())->getTickSleeper()->addNotifier(static function (): void {});
+        self::assertTrue(method_exists($sleeperEntry, 'createNotifier'));
     }
 
     public function testConfigPersistsSimpleValues(): void
     {
         $file = sys_get_temp_dir() . '/pmmpcompat-config-' . getmypid() . '.yml';
         @unlink($file);
-        $config = new Config($file, Config::YAML, ['enabled' => true, 'limit' => 7, 'name' => 'demo']);
+        $config = new Config($file, Config::YAML, [
+            'enabled' => true,
+            'limit' => 7,
+            'name' => 'demo',
+            'commands' => ['disabled' => []],
+            'aliases' => ['one', 'two'],
+        ]);
         $config->save();
 
         $loaded = new Config($file, Config::YAML);
         self::assertTrue($loaded->get('enabled'));
         self::assertSame(7, $loaded->get('limit'));
         self::assertSame('demo', $loaded->get('name'));
+        self::assertSame([], $loaded->getNested('commands.disabled'));
+        self::assertSame(['one', 'two'], $loaded->get('aliases'));
     }
 
     public function testCommonServerPlayerWorldItemFacades(): void

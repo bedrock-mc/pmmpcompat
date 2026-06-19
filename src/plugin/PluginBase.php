@@ -18,6 +18,7 @@ abstract class PluginBase implements CommandExecutor, Plugin
     private ?Server $server = null;
     private ?PluginLoader $loader = null;
     private ?PluginDescription $description = null;
+    private string $file = '';
     private string $dataFolder = '';
     private string $resourceFolder = '';
     private ?TaskScheduler $scheduler = null;
@@ -26,11 +27,12 @@ abstract class PluginBase implements CommandExecutor, Plugin
 
     public function __construct() {}
 
-    final public function __pmmpInit(Server $server, PluginDescription $description, string $dataFolder, string $resourceFolder = '', ?PluginLoader $loader = null): void
+    final public function __pmmpInit(Server $server, PluginDescription $description, string $dataFolder, string $resourceFolder = '', ?PluginLoader $loader = null, string $file = ''): void
     {
         $this->server = $server;
         $this->loader = $loader;
         $this->description = $description;
+        $this->file = $file;
         $this->dataFolder = rtrim($dataFolder, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
         $this->resourceFolder = $resourceFolder === '' ? '' : rtrim($resourceFolder, '/\\') . DIRECTORY_SEPARATOR;
         $this->scheduler = new TaskScheduler($description->getName());
@@ -104,6 +106,11 @@ abstract class PluginBase implements CommandExecutor, Plugin
     public function getFullName(): string
     {
         return $this->getName() . ' v' . $this->getDescription()->getVersion();
+    }
+
+    public function getFile(): string
+    {
+        return $this->file;
     }
 
     public function getCommand(string $name): ?\pocketmine\command\PluginCommand

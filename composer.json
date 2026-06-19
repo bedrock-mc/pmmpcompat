@@ -11,7 +11,8 @@
   ],
   "autoload": {
     "psr-4": {
-      "pocketmine\\": "src/"
+      "pocketmine\\": "src/",
+      "pmmp\\thread\\": "src/pmmp/thread/"
     }
   },
   "autoload-dev": {

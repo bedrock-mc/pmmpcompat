@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace pocketmine\thread;
 
-abstract class Worker
+abstract class Worker extends Thread
 {
-    use CommonThreadPartsTrait;
-
     /** @var list<object> */
     private array $stack = [];
 

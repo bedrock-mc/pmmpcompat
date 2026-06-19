@@ -400,6 +400,23 @@ class Config
 
     private static function parseScalar(string $raw): mixed
     {
+        $raw = trim($raw, " \t");
+        if ($raw === '') {
+            return '';
+        }
+        if (($raw[0] === '"' && str_ends_with($raw, '"')) || ($raw[0] === "'" && str_ends_with($raw, "'"))) {
+            return substr($raw, 1, -1);
+        }
+        if ($raw[0] === '[' && str_ends_with($raw, ']')) {
+            $inside = trim(substr($raw, 1, -1));
+            if ($inside === '') {
+                return [];
+            }
+            return array_map(static fn(string $v): mixed => self::parseScalar($v), explode(',', $inside));
+        }
+        if ($raw === '{}') {
+            return [];
+        }
         $lower = strtolower($raw);
         if (in_array($lower, ['true', 'yes', 'on'], true)) {
             return true;

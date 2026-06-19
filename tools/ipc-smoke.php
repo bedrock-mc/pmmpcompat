@@ -49,7 +49,17 @@ class EchoPlugin extends PluginBase implements Listener {
 }
 PHP);
 
-$cmd = PHP_BINARY . ' ' . escapeshellarg($root . '/bin/pmmpcompat-runtime.php') . ' ' . escapeshellarg($plugins);
+$phpBinary = getenv('PMMPCOMPAT_PHP') ?: PHP_BINARY;
+$phpArgs = trim((string) (getenv('PMMPCOMPAT_PHP_ARGS') ?: ''));
+$cmdParts = [escapeshellarg($phpBinary)];
+if ($phpArgs !== '') {
+    foreach (preg_split('/\s+/', $phpArgs) ?: [] as $arg) {
+        $cmdParts[] = escapeshellarg($arg);
+    }
+}
+$cmdParts[] = escapeshellarg($root . '/bin/pmmpcompat-runtime.php');
+$cmdParts[] = escapeshellarg($plugins);
+$cmd = implode(' ', $cmdParts);
 $process = proc_open($cmd, [
     0 => ['pipe', 'r'],
     1 => ['pipe', 'w'],

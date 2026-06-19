@@ -4,24 +4,36 @@ declare(strict_types=1);
 
 namespace pocketmine\thread;
 
-class ThreadSafeClassLoader
+class ThreadSafeClassLoader extends \pmmp\thread\ThreadSafe
 {
-    /** @var array<string, list<string>> */
-    private array $paths = [];
+    private static ?self $default = null;
+
+    private \pmmp\thread\ThreadSafeArray $paths;
     private bool $registered = false;
 
     public function __construct()
     {
+        $this->paths = new \pmmp\thread\ThreadSafeArray();
+    }
+
+    public static function getDefault(): self
+    {
+        return self::$default ??= new self();
     }
 
     public function addPath(string $namespacePrefix, string $path, bool $prepend = false): void
     {
         $prefix = trim($namespacePrefix, '\\');
-        $this->paths[$prefix] ??= [];
+        if (!isset($this->paths[$prefix])) {
+            $this->paths[$prefix] = new \pmmp\thread\ThreadSafeArray();
+        }
+        $paths = $this->paths[$prefix];
         if ($prepend) {
-            array_unshift($this->paths[$prefix], rtrim($path, '/\\'));
+            $current = method_exists($paths, 'toArray') ? $paths->toArray() : iterator_to_array($paths);
+            array_unshift($current, rtrim($path, '/\\'));
+            $this->paths[$prefix] = \pmmp\thread\ThreadSafeArray::fromArray($current);
         } else {
-            $this->paths[$prefix][] = rtrim($path, '/\\');
+            $paths[] = rtrim($path, '/\\');
         }
     }
 

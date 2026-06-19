@@ -34,6 +34,7 @@ class Server
     private SimpleCommandMap $commandMap;
     private TaskScheduler $scheduler;
     private AsyncPool $asyncPool;
+    private TimeTrackingSleeperHandler $tickSleeper;
     private WorldManager $worldManager;
     private MainLogger $logger;
     private PermissionManager $permissionManager;
@@ -61,6 +62,7 @@ class Server
         $this->commandMap = new SimpleCommandMap();
         $this->pluginManager = new PluginManager($this);
         $this->scheduler = new TaskScheduler('server');
+        $this->tickSleeper = new TimeTrackingSleeperHandler();
         $this->asyncPool = new AsyncPool();
         $this->worldManager = new WorldManager($this, $this->dataPath ?? '');
         $this->logger = new MainLogger('server');
@@ -259,6 +261,11 @@ class Server
     public function getAsyncPool(): AsyncPool
     {
         return $this->asyncPool;
+    }
+
+    public function getTickSleeper(): TimeTrackingSleeperHandler
+    {
+        return $this->tickSleeper;
     }
 
     public function getConfigGroup(): never

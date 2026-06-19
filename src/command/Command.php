@@ -6,18 +6,27 @@ namespace pocketmine\command;
 
 class Command
 {
+    /** @var string[] */
+    private array $aliases = [];
+    private string $usage = '';
+
     /** @param string[] $aliases */
     public function __construct(
         private string $name,
         private string $description = '',
-        private array $aliases = [],
+        string|array|null $usageMessage = null,
+        array $aliases = [],
         private ?string $permission = null,
         private string $permissionMessage = '',
-        private string $usage = '',
         private string $label = '',
     ) {
+        if (is_array($usageMessage) && $aliases === []) {
+            $aliases = $usageMessage;
+            $usageMessage = null;
+        }
+        $this->aliases = array_values(array_map('strval', $aliases));
         $this->label = $this->label === '' ? $this->name : $this->label;
-        $this->usage = $this->usage === '' ? '/' . $this->name : $this->usage;
+        $this->usage = $usageMessage === null || $usageMessage === '' ? '/' . $this->name : (string) $usageMessage;
     }
 
     public function __toString(): string

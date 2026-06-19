@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace pocketmine\plugin;
 
 use pocketmine\Server;
+use pocketmine\thread\ThreadSafeClassLoader;
 
 class PluginLoader
 {
@@ -96,7 +97,7 @@ class PluginLoader
         if (!$plugin instanceof PluginBase) {
             throw new \RuntimeException("Plugin main class must extend " . PluginBase::class);
         }
-        $plugin->__pmmpInit($this->server, $description, $path . DIRECTORY_SEPARATOR . 'plugin_data', $path . DIRECTORY_SEPARATOR . 'resources', $this);
+        $plugin->__pmmpInit($this->server, $description, $path . DIRECTORY_SEPARATOR . 'plugin_data', $path . DIRECTORY_SEPARATOR . 'resources', $this, $path);
         if ($register) {
             $this->server->getPluginManager()->registerPlugin($plugin);
         }
@@ -127,7 +128,7 @@ class PluginLoader
             throw new \RuntimeException("Plugin main class must extend " . PluginBase::class);
         }
         $dataRoot = dirname($path) . DIRECTORY_SEPARATOR . pathinfo($path, PATHINFO_FILENAME) . '_data';
-        $plugin->__pmmpInit($this->server, $description, $dataRoot, 'phar://' . $path . '/resources', $this);
+        $plugin->__pmmpInit($this->server, $description, $dataRoot, 'phar://' . $path . '/resources', $this, $path);
         if ($register) {
             $this->server->getPluginManager()->registerPlugin($plugin);
         }
@@ -160,6 +161,7 @@ class PluginLoader
         $prefix = trim($description->getSrcNamespacePrefix(), '\\');
         $prefix = $prefix === '' ? '' : $prefix . '\\';
         $root = rtrim($src, '/\\');
+        ThreadSafeClassLoader::getDefault()->addPath($prefix, $root);
 
         spl_autoload_register(static function (string $class) use ($root, $prefix): void {
             $trimmed = ltrim($class, '\\');

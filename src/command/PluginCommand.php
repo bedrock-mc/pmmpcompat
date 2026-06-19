@@ -21,6 +21,7 @@ class PluginCommand extends Command
         parent::__construct(
             $name,
             (string) ($spec['description'] ?? ''),
+            isset($spec['usage']) ? (string) $spec['usage'] : null,
             is_array($aliases) ? array_map('strval', $aliases) : [],
             isset($spec['permission']) ? (string) $spec['permission'] : null,
             (string) ($spec['permission-message'] ?? $spec['permission_message'] ?? ''),

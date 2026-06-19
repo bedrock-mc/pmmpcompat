@@ -35,6 +35,7 @@ foreach ($args as $path) {
             'ok' => false,
             'classification' => classifyFailure($e),
             'error' => $e::class . ': ' . $e->getMessage(),
+            ...((getenv('PMMPCOMPAT_TRACE') === '1') ? ['trace' => $e->getTraceAsString()] : []),
         ];
         if (!$keepGoing) {
             break;

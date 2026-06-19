@@ -45,6 +45,17 @@ php -d phar.readonly=0 tools/plugin-package-corpus.php --self-test
 php -d phar.readonly=0 tools/phar-smoke.php
 ```
 
+For production-shaped validation, use the PocketMine PHP build instead of stock system PHP. Download the matching archive from [pmmp/PHP-Binaries `pm5-php-8.2-latest`](https://github.com/pmmp/PHP-Binaries/releases/tag/pm5-php-8.2-latest), extract it, then point `PMMPCOMPAT_PHP` at its `php` executable:
+
+```bash
+export PMMPCOMPAT_PHP=/path/to/pmmp-php/bin/php7/bin/php
+export PMMPCOMPAT_PHP_ARGS="-d extension_dir=/path/to/pmmp-php/bin/php7/lib/php/extensions/no-debug-zts-20220829"
+$PMMPCOMPAT_PHP $PMMPCOMPAT_PHP_ARGS -d phar.readonly=0 tools/plugin-package-corpus.php /path/to/Plugin.phar
+php tools/ipc-smoke.php
+```
+
+If `PMMPCOMPAT_PHP` is not set, tests and tools use the current PHP runtime. `PMMPCOMPAT_PHP_ARGS` is optional, but it is useful for relocated PMMP PHP archives whose `php.ini` still points at the build-machine extension directory. The checked-in fallback shims let local validation run on stock PHP, but native PMMP PHP is the intended path for real async/thread fidelity because it can provide PMMP's `pmmp\thread` support.
+
 The smoke tests create temporary PMMP-style plugin folders and phars, load them via `PluginLoader` and the JSON-lines runtime process, validate dependency order, run lifecycle hooks, copy bundled resources/configs, dispatch command aliases, dispatch listener events, exercise forms/common events including form response callbacks, run scheduler ticks, persist configs and SQLite state, run local async task completion, exercise bundled virion-style classes, and verify bridge actions back to the host.
 
 For outside plugin packages, run `php -d phar.readonly=0 tools/plugin-package-corpus.php <path> [...]` with plugin folders, `.phar` files, or directories containing multiple dropped plugins. The tool copies each corpus into an isolated runtime, then verifies load, enable, ticks, disable, and emitted action collection.
@@ -67,6 +78,8 @@ go test ./...
 cd ../dragonfly
 go test ./...
 ```
+
+Set `PMMPCOMPAT_PHP=/path/to/pmmp-php/bin/php7/bin/php` and, when needed, `PMMPCOMPAT_PHP_ARGS="-d extension_dir=/path/to/pmmp-php/bin/php7/lib/php/extensions/no-debug-zts-20220829"` before running the Go tests to make the host client spawn the same PHP binary the server will use. Go hosts that need explicit PHP flags can call `StartWithArgs()`.
 
 Lunar/Dragonfly code should integrate at this layer: keep the PHP process alive, forward normalized host events, and apply returned action records. The Go package includes `ApplyActions()`, `TargetResolver`, `PlayerTarget`, and `ServerTarget` so host code can map every emitted action through typed methods instead of switching on raw action strings in gameplay code.
 

@@ -125,10 +125,17 @@ type FormResponseResult struct {
 }
 
 func Start(ctx context.Context, phpBinary, runtimeScript, pluginsDir string) (*Client, error) {
+	return StartWithArgs(ctx, phpBinary, nil, runtimeScript, pluginsDir)
+}
+
+func StartWithArgs(ctx context.Context, phpBinary string, phpArgs []string, runtimeScript, pluginsDir string) (*Client, error) {
 	if phpBinary == "" {
 		phpBinary = "php"
 	}
-	cmd := exec.CommandContext(ctx, phpBinary, runtimeScript, pluginsDir)
+	args := make([]string, 0, len(phpArgs)+2)
+	args = append(args, phpArgs...)
+	args = append(args, runtimeScript, pluginsDir)
+	cmd := exec.CommandContext(ctx, phpBinary, args...)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, fmt.Errorf("stdin pipe: %w", err)

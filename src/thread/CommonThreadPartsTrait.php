@@ -6,25 +6,30 @@ namespace pocketmine\thread;
 
 trait CommonThreadPartsTrait
 {
-    /** @var ThreadSafeClassLoader[]|null */
-    private ?array $classLoaders = null;
+    private ?\pmmp\thread\ThreadSafeArray $classLoaders = null;
     private ?ThreadCrashInfo $crashInfo = null;
-    private bool $started = false;
-    private bool $joined = false;
+    protected ?string $composerAutoloaderPath = null;
     protected bool $isKilled = false;
 
     public function getClassLoaders(): ?array
     {
-        return $this->classLoaders;
+        if ($this->classLoaders === null) {
+            return null;
+        }
+        return method_exists($this->classLoaders, 'toArray') ? $this->classLoaders->toArray() : iterator_to_array($this->classLoaders);
     }
 
     public function setClassLoaders(?array $autoloaders = null): void
     {
-        $this->classLoaders = $autoloaders ?? [];
+        $this->composerAutoloaderPath = defined('PMMPCOMPAT_AUTOLOADER_PATH') ? (string) \PMMPCOMPAT_AUTOLOADER_PATH : null;
+        $this->classLoaders = \pmmp\thread\ThreadSafeArray::fromArray($autoloaders ?? [ThreadSafeClassLoader::getDefault()]);
     }
 
     public function registerClassLoaders(): void
     {
+        if ($this->composerAutoloaderPath !== null) {
+            require_once $this->composerAutoloaderPath;
+        }
         foreach ($this->classLoaders ?? [] as $autoloader) {
             $autoloader->register(false);
         }
@@ -41,10 +46,8 @@ trait CommonThreadPartsTrait
         if ($this->classLoaders === null) {
             $this->setClassLoaders();
         }
-        $this->started = true;
         try {
-            $this->run();
-            return true;
+            return parent::start($options) && $this->crashInfo === null;
         } catch (\Throwable $e) {
             $this->crashInfo = ThreadCrashInfo::fromThrowable($e, $this->getThreadName());
             return false;
@@ -54,47 +57,57 @@ trait CommonThreadPartsTrait
     final public function run(): void
     {
         $this->registerClassLoaders();
-        $this->onRun();
+        try {
+            $this->onRun();
+        } catch (\Throwable $e) {
+            if (extension_loaded('pmmpthread')) {
+                throw $e;
+            }
+            $this->crashInfo = ThreadCrashInfo::fromThrowable($e, $this->getThreadName());
+        }
         $this->isKilled = true;
-        $this->joined = true;
     }
 
     public function quit(): void
     {
         $this->isKilled = true;
-        $this->joined = true;
+        if (!$this->isJoined()) {
+            $this->notify();
+            $this->join();
+        }
         ThreadManager::getInstance()->remove($this);
     }
 
     public function isStarted(): bool
     {
-        return $this->started;
+        return parent::isStarted();
     }
 
     public function isJoined(): bool
     {
-        return $this->joined;
+        return parent::isJoined();
     }
 
     public function isTerminated(): bool
     {
-        return $this->isKilled || $this->crashInfo !== null;
+        return $this->isKilled || $this->crashInfo !== null || parent::isTerminated();
     }
 
     public function join(): bool
     {
-        $this->joined = true;
+        $joined = parent::join();
         ThreadManager::getInstance()->remove($this);
-        return true;
+        return $joined;
     }
 
-    public function notify(): void
+    public function notify(): bool
     {
+        return parent::notify();
     }
 
     public function synchronized(\Closure $closure, mixed ...$args): mixed
     {
-        return $closure(...$args);
+        return parent::synchronized($closure, ...$args);
     }
 
     abstract protected function onRun(): void;

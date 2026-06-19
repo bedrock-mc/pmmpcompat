@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 )
@@ -17,8 +18,13 @@ func TestClientDrivesPMMPRuntimeProcess(t *testing.T) {
 	root := packageRoot(t)
 	pluginsDir := t.TempDir()
 	writeEchoPlugin(t, pluginsDir)
+	phpBinary := os.Getenv("PMMPCOMPAT_PHP")
+	if phpBinary == "" {
+		phpBinary = "php"
+	}
+	phpArgs := strings.Fields(os.Getenv("PMMPCOMPAT_PHP_ARGS"))
 
-	client, err := Start(ctx, "php", filepath.Join(root, "bin", "pmmpcompat-runtime.php"), pluginsDir)
+	client, err := StartWithArgs(ctx, phpBinary, phpArgs, filepath.Join(root, "bin", "pmmpcompat-runtime.php"), pluginsDir)
 	if err != nil {
 		t.Fatalf("start runtime: %v", err)
 	}
