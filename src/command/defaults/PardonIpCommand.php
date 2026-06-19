@@ -1,0 +1,18 @@
+<?php
+
+declare(strict_types=1);
+
+namespace pocketmine\command\defaults;
+
+class PardonIpCommand extends VanillaCommand
+{
+    public function __construct()
+    {
+        parent::__construct("pardon-ip", "pardon ip command", "/pardon-ip");
+    }
+
+    public function execute(\pocketmine\command\CommandSender $sender, string $commandLabel, array $args): bool
+    {
+        return parent::execute($sender, $commandLabel, $args);
+    }
+}

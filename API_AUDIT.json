@@ -1,0 +1,10 @@
+{
+    "summary": {
+        "reference_classes": 1490,
+        "facade_classes": 1526,
+        "missing_classes": 0,
+        "classes_with_missing_members": 0
+    },
+    "missing_classes_sample": [],
+    "missing_members_sample": []
+}

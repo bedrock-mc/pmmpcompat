@@ -1,0 +1,11 @@
+<?php
+
+declare(strict_types=1);
+
+namespace pocketmine\block\inventory;
+
+class ShulkerBoxInventory extends CompatBlockInventory
+{
+    public function __construct(mixed ...$args) { parent::__construct($args[0] ?? null, 27); }
+    public function canAddItem(\pocketmine\item\Item $item): bool { return parent::canAddItem($item); }
+}

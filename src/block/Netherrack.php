@@ -1,0 +1,11 @@
+<?php
+
+declare(strict_types=1);
+
+namespace pocketmine\block;
+
+class Netherrack extends \pocketmine\block\Block
+{
+    public function __construct(mixed ...$args) { parent::__construct('minecraft:netherrack', 'Netherrack'); }
+    public function burnsForever(): bool { return $this->compatMethod(__FUNCTION__, []); }
+}

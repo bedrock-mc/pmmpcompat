@@ -1,0 +1,56 @@
+<?php
+
+declare(strict_types=1);
+
+namespace pocketmine\block\utils;
+
+use pocketmine\color\Color;
+use pocketmine\utils\LegacyEnumShimTrait;
+
+enum BannerPatternType
+{
+    use LegacyEnumShimTrait;
+
+    case BORDER;
+    case BRICKS;
+    case CIRCLE;
+    case CREEPER;
+    case CROSS;
+    case CURLY_BORDER;
+    case DIAGONAL_LEFT;
+    case DIAGONAL_RIGHT;
+    case DIAGONAL_UP_LEFT;
+    case DIAGONAL_UP_RIGHT;
+    case FLOW;
+    case FLOWER;
+    case GLOBE;
+    case GRADIENT;
+    case GRADIENT_UP;
+    case GUSTER;
+    case HALF_HORIZONTAL;
+    case HALF_HORIZONTAL_BOTTOM;
+    case HALF_VERTICAL;
+    case HALF_VERTICAL_RIGHT;
+    case MOJANG;
+    case PIGLIN;
+    case RHOMBUS;
+    case SKULL;
+    case SMALL_STRIPES;
+    case SQUARE_BOTTOM_LEFT;
+    case SQUARE_BOTTOM_RIGHT;
+    case SQUARE_TOP_LEFT;
+    case SQUARE_TOP_RIGHT;
+    case STRAIGHT_CROSS;
+    case STRIPE_BOTTOM;
+    case STRIPE_CENTER;
+    case STRIPE_DOWNLEFT;
+    case STRIPE_DOWNRIGHT;
+    case STRIPE_LEFT;
+    case STRIPE_MIDDLE;
+    case STRIPE_RIGHT;
+    case STRIPE_TOP;
+    case TRIANGLE_BOTTOM;
+    case TRIANGLE_TOP;
+    case TRIANGLES_BOTTOM;
+    case TRIANGLES_TOP;
+}

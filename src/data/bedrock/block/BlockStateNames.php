@@ -1,0 +1,125 @@
+<?php
+
+declare(strict_types=1);
+
+namespace pocketmine\data\bedrock\block;
+
+/**
+ * Generated PMMP compatibility stub.
+ * Replace with a handwritten bridge facade when behavior matters.
+ */
+class BlockStateNames
+{
+    public const ACTIVE = 0;
+    public const AGE = 0;
+    public const AGE_BIT = 0;
+    public const ATTACHED_BIT = 0;
+    public const ATTACHMENT = 0;
+    public const BAMBOO_LEAF_SIZE = 0;
+    public const BAMBOO_STALK_THICKNESS = 0;
+    public const BIG_DRIPLEAF_HEAD = 0;
+    public const BIG_DRIPLEAF_TILT = 0;
+    public const BITE_COUNTER = 0;
+    public const BLOOM = 0;
+    public const BOOKS_STORED = 0;
+    public const BREWING_STAND_SLOT_A_BIT = 0;
+    public const BREWING_STAND_SLOT_B_BIT = 0;
+    public const BREWING_STAND_SLOT_C_BIT = 0;
+    public const BRUSHED_PROGRESS = 0;
+    public const BUTTON_PRESSED_BIT = 0;
+    public const CANDLES = 0;
+    public const CAN_SUMMON = 0;
+    public const CAULDRON_LIQUID = 0;
+    public const CLUSTER_COUNT = 0;
+    public const COMPOSTER_FILL_LEVEL = 0;
+    public const CONDITIONAL_BIT = 0;
+    public const CORAL_DIRECTION = 0;
+    public const CORAL_FAN_DIRECTION = 0;
+    public const COVERED_BIT = 0;
+    public const CRACKED_STATE = 0;
+    public const CRAFTING = 0;
+    public const CREAKING_HEART_STATE = 0;
+    public const DEAD_BIT = 0;
+    public const DEPRECATED = 0;
+    public const DIRECTION = 0;
+    public const DISARMED_BIT = 0;
+    public const DOOR_HINGE_BIT = 0;
+    public const DRAG_DOWN = 0;
+    public const DRIPSTONE_THICKNESS = 0;
+    public const END_PORTAL_EYE_BIT = 0;
+    public const EXPLODE_BIT = 0;
+    public const EXTINGUISHED = 0;
+    public const FACING_DIRECTION = 0;
+    public const FILL_LEVEL = 0;
+    public const GROUND_SIGN_DIRECTION = 0;
+    public const GROWING_PLANT_AGE = 0;
+    public const GROWTH = 0;
+    public const HANGING = 0;
+    public const HEAD_PIECE_BIT = 0;
+    public const HEIGHT = 0;
+    public const HONEY_LEVEL = 0;
+    public const HUGE_MUSHROOM_BITS = 0;
+    public const INFINIBURN_BIT = 0;
+    public const IN_WALL_BIT = 0;
+    public const ITEM_FRAME_MAP_BIT = 0;
+    public const ITEM_FRAME_PHOTO_BIT = 0;
+    public const KELP_AGE = 0;
+    public const LEVER_DIRECTION = 0;
+    public const LIQUID_DEPTH = 0;
+    public const LIT = 0;
+    public const MC_BLOCK_FACE = 0;
+    public const MC_CARDINAL_DIRECTION = 0;
+    public const MC_FACING_DIRECTION = 0;
+    public const MC_VERTICAL_HALF = 0;
+    public const MOISTURIZED_AMOUNT = 0;
+    public const MULTI_FACE_DIRECTION_BITS = 0;
+    public const NATURAL = 0;
+    public const OCCUPIED_BIT = 0;
+    public const OMINOUS = 0;
+    public const OPEN_BIT = 0;
+    public const ORIENTATION = 0;
+    public const OUTPUT_LIT_BIT = 0;
+    public const OUTPUT_SUBTRACT_BIT = 0;
+    public const PALE_MOSS_CARPET_SIDE_EAST = 0;
+    public const PALE_MOSS_CARPET_SIDE_NORTH = 0;
+    public const PALE_MOSS_CARPET_SIDE_SOUTH = 0;
+    public const PALE_MOSS_CARPET_SIDE_WEST = 0;
+    public const PERSISTENT_BIT = 0;
+    public const PILLAR_AXIS = 0;
+    public const PORTAL_AXIS = 0;
+    public const POWERED_BIT = 0;
+    public const POWERED_SHELF_TYPE = 0;
+    public const PROPAGULE_STAGE = 0;
+    public const RAIL_DATA_BIT = 0;
+    public const RAIL_DIRECTION = 0;
+    public const REDSTONE_SIGNAL = 0;
+    public const REHYDRATION_LEVEL = 0;
+    public const REPEATER_DELAY = 0;
+    public const RESPAWN_ANCHOR_CHARGE = 0;
+    public const ROTATION = 0;
+    public const SCULK_SENSOR_PHASE = 0;
+    public const SEA_GRASS_TYPE = 0;
+    public const STABILITY = 0;
+    public const STABILITY_CHECK = 0;
+    public const STRUCTURE_BLOCK_TYPE = 0;
+    public const SUSPENDED_BIT = 0;
+    public const TIP = 0;
+    public const TOGGLE_BIT = 0;
+    public const TORCH_FACING_DIRECTION = 0;
+    public const TRIAL_SPAWNER_STATE = 0;
+    public const TRIGGERED_BIT = 0;
+    public const TURTLE_EGG_COUNT = 0;
+    public const TWISTING_VINES_AGE = 0;
+    public const UPDATE_BIT = 0;
+    public const UPPER_BLOCK_BIT = 0;
+    public const UPSIDE_DOWN_BIT = 0;
+    public const VAULT_STATE = 0;
+    public const VINE_DIRECTION_BITS = 0;
+    public const WALL_CONNECTION_TYPE_EAST = 0;
+    public const WALL_CONNECTION_TYPE_NORTH = 0;
+    public const WALL_CONNECTION_TYPE_SOUTH = 0;
+    public const WALL_CONNECTION_TYPE_WEST = 0;
+    public const WALL_POST_BIT = 0;
+    public const WEEPING_VINES_AGE = 0;
+    public const WEIRDO_DIRECTION = 0;
+}

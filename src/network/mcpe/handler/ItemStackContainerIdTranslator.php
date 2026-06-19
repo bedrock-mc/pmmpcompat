@@ -1,0 +1,65 @@
+<?php
+
+declare(strict_types=1);
+
+namespace pocketmine\network\mcpe\handler;
+
+use pocketmine\network\PacketHandlingException;
+
+/**
+ * Translates Bedrock UI container IDs into PMMP inventory window IDs.
+ */
+final class ItemStackContainerIdTranslator
+{
+    public const CONTAINER_INVENTORY = 0;
+    public const CONTAINER_UI = 124;
+    public const CONTAINER_OFFHAND = 119;
+    public const CONTAINER_ARMOR = 120;
+
+    /** @var array<int, int> */
+    private const FIXED_WINDOW_IDS = [
+        4 => self::CONTAINER_ARMOR,
+        5 => self::CONTAINER_INVENTORY,
+        6 => self::CONTAINER_INVENTORY,
+        7 => self::CONTAINER_INVENTORY,
+        37 => self::CONTAINER_OFFHAND,
+    ];
+
+    /** @var array<int, true> */
+    private const UI_CONTAINER_IDS = [
+        13 => true, 14 => true, 15 => true, 16 => true, 17 => true, 18 => true,
+        19 => true, 20 => true, 21 => true, 22 => true, 23 => true, 24 => true,
+        25 => true, 26 => true, 27 => true, 28 => true, 29 => true, 30 => true,
+        31 => true, 32 => true, 33 => true, 34 => true, 35 => true, 36 => true,
+        38 => true, 39 => true, 40 => true, 41 => true, 42 => true, 43 => true,
+        44 => true, 45 => true, 46 => true, 47 => true, 48 => true, 49 => true,
+        50 => true, 51 => true, 52 => true, 53 => true, 54 => true,
+    ];
+
+    /** @var array<int, true> */
+    private const CURRENT_WINDOW_CONTAINER_IDS = [
+        8 => true, 9 => true, 10 => true, 11 => true, 12 => true, 55 => true,
+        56 => true, 57 => true, 58 => true, 59 => true, 60 => true, 61 => true,
+    ];
+
+    private function __construct() {}
+
+    /** @return array{int, int} */
+    public static function translate(int $containerInterfaceId, int $currentWindowId, int $slotId): array
+    {
+        if ($containerInterfaceId === 37) {
+            return [self::CONTAINER_OFFHAND, 0];
+        }
+        if (isset(self::FIXED_WINDOW_IDS[$containerInterfaceId])) {
+            return [self::FIXED_WINDOW_IDS[$containerInterfaceId], $slotId];
+        }
+        if (isset(self::UI_CONTAINER_IDS[$containerInterfaceId])) {
+            return [self::CONTAINER_UI, $slotId];
+        }
+        if (isset(self::CURRENT_WINDOW_CONTAINER_IDS[$containerInterfaceId])) {
+            return [$currentWindowId, $slotId];
+        }
+
+        throw new PacketHandlingException("Unexpected container UI ID $containerInterfaceId");
+    }
+}
