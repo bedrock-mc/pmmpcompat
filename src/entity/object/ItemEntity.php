@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace pocketmine\entity\object;
 
 use pocketmine\entity\Entity;
+use pocketmine\entity\Location;
 use pocketmine\item\Item;
 use pocketmine\item\VanillaItems;
+use pocketmine\nbt\tag\CompoundTag;
 
 class ItemEntity extends Entity
 {
@@ -24,14 +26,20 @@ class ItemEntity extends Entity
 
     public function __construct(mixed ...$args)
     {
+        $location = null;
+        $nbt = null;
         $item = null;
         foreach ($args as $arg) {
-            if ($arg instanceof Item) {
+            if ($arg instanceof Location && $location === null) {
+                $location = $arg;
+            } elseif ($arg instanceof CompoundTag && $nbt === null) {
+                $nbt = $arg;
+            } elseif ($arg instanceof Item) {
                 $item = $arg;
-                break;
             }
         }
         $this->item = clone ($item ?? VanillaItems::AIR());
+        parent::__construct($location, $nbt);
     }
 
     public static function getNetworkTypeId(mixed ...$args): string
@@ -108,8 +116,8 @@ class ItemEntity extends Entity
     public function canBeCollidedWith(mixed ...$args): bool { return false; }
     public function canCollideWith(mixed ...$args): bool { return false; }
     public function canSaveWithChunk(mixed ...$args): bool { return true; }
-    public function getOffsetPosition(mixed ...$args): mixed { return null; }
+    public function getOffsetPosition(mixed ...$args): mixed { return $this->getPosition(); }
     public function isFireProof(mixed ...$args): bool { return $this->item->isFireProof(); }
     public function onCollideWithPlayer(mixed ...$args): mixed { return null; }
-    public function saveNBT(mixed ...$args): mixed { return null; }
+    public function saveNBT(mixed ...$args): CompoundTag { return parent::saveNBT(); }
 }

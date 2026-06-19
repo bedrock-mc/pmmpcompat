@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace pocketmine\entity\object;
 
 use pocketmine\entity\Entity;
+use pocketmine\entity\Location;
 use pocketmine\entity\effect\EffectInstance;
+use pocketmine\nbt\tag\CompoundTag;
 
 class AreaEffectCloud extends Entity
 {
@@ -29,9 +31,22 @@ class AreaEffectCloud extends Entity
     private float $radiusChangePerTick = self::DEFAULT_RADIUS_CHANGE_PER_TICK;
     private int $reapplicationDelay = self::REAPPLICATION_DELAY;
 
-    public function __construct(EffectInstance ...$effects)
+    public function __construct(mixed ...$args)
     {
+        $location = null;
+        $nbt = null;
+        $effects = [];
+        foreach ($args as $arg) {
+            if ($arg instanceof Location && $location === null) {
+                $location = $arg;
+            } elseif ($arg instanceof CompoundTag && $nbt === null) {
+                $nbt = $arg;
+            } elseif ($arg instanceof EffectInstance) {
+                $effects[] = $arg;
+            }
+        }
         $this->effects = $effects;
+        parent::__construct($location, $nbt);
     }
 
     public static function getNetworkTypeId(mixed ...$args): string { return 'minecraft:area_effect_cloud'; }
@@ -54,5 +69,6 @@ class AreaEffectCloud extends Entity
     public function getReapplicationDelay(): int { return $this->reapplicationDelay; }
     public function setReapplicationDelay(int $delay): void { $this->reapplicationDelay = max(0, $delay); }
     public function isFireProof(mixed ...$args): bool { return true; }
-    public function saveNBT(mixed ...$args): mixed { return null; }
+    public function setRadius(float $radius): void { $this->radius = max(0.0, $radius); }
+    public function saveNBT(mixed ...$args): CompoundTag { return parent::saveNBT(); }
 }

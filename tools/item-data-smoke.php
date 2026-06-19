@@ -15,16 +15,23 @@ spl_autoload_register(static function(string $class): void {
 });
 
 use pocketmine\data\bedrock\block\BlockStateData;
+use pocketmine\data\bedrock\item\BlockItemIdMap;
+use pocketmine\data\bedrock\item\ItemDeserializer;
+use pocketmine\data\bedrock\item\ItemSerializer;
+use pocketmine\data\bedrock\item\ItemSerializerDeserializerRegistrar;
 use pocketmine\data\bedrock\item\ItemTypeDeserializeException;
+use pocketmine\data\bedrock\item\ItemTypeNames;
 use pocketmine\data\bedrock\item\ItemTypeSerializeException;
 use pocketmine\data\bedrock\item\SavedItemData;
 use pocketmine\data\bedrock\item\SavedItemStackData;
 use pocketmine\data\bedrock\item\UnsupportedItemTypeException;
+use pocketmine\block\VanillaBlocks;
 use pocketmine\item\enchantment\EnchantingOption;
 use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\enchantment\EnchantmentInstance;
 use pocketmine\item\enchantment\ItemFlags;
 use pocketmine\item\enchantment\Rarity;
+use pocketmine\item\VanillaItems;
 use pocketmine\nbt\tag\ByteTag;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\ListTag;
@@ -79,5 +86,28 @@ assertTrue($option->getEnchantments() === [$instance], 'EnchantingOption enchant
 assertTrue(is_subclass_of(ItemTypeDeserializeException::class, RuntimeException::class), 'deserialize exception base');
 assertTrue(is_subclass_of(ItemTypeSerializeException::class, LogicException::class), 'serialize exception base');
 assertTrue(is_subclass_of(UnsupportedItemTypeException::class, ItemTypeDeserializeException::class), 'unsupported exception base');
+
+assertTrue(ItemTypeNames::DIAMOND_SWORD === 'minecraft:diamond_sword', 'item type constants expose Bedrock string IDs');
+
+$idMap = BlockItemIdMap::getInstance();
+assertTrue($idMap->lookupItemId('minecraft:stone') === 'minecraft:stone', 'block item map resolves stone block to item');
+assertTrue($idMap->lookupBlockId('minecraft:dirt') === 'minecraft:dirt', 'block item map resolves dirt item to block');
+
+$serializer = new ItemSerializer();
+$serializedType = $serializer->serializeType(VanillaItems::DIAMOND());
+assertTrue($serializedType->getName() === 'minecraft:diamond', 'item serializer defaults to type ID');
+$serializedStack = $serializer->serializeStack(VanillaItems::DIAMOND()->setCount(3), 7);
+assertTrue($serializedStack->getCount() === 3 && $serializedStack->getSlot() === 7, 'item serializer preserves count and slot');
+
+$deserializer = new ItemDeserializer();
+$deserialized = $deserializer->deserializeStack(new SavedItemStackData(new SavedItemData('minecraft:diamond_sword'), 2, null, null, [], []));
+assertTrue($deserialized->getTypeId() === 'minecraft:diamond_sword' && $deserialized->getCount() === 2, 'item deserializer returns local item with count');
+
+$registrar = new ItemSerializerDeserializerRegistrar();
+$registrar->map1to1Item(VanillaItems::DIAMOND(), 'minecraft:diamond');
+assertTrue($registrar->serializer->serializeType(VanillaItems::DIAMOND())->getName() === 'minecraft:diamond', 'item registrar wires serializer');
+assertTrue($registrar->deserializer->deserializeType('minecraft:diamond')->getTypeId() === 'minecraft:diamond', 'item registrar wires deserializer');
+$registrar->map1to1Block(VanillaBlocks::STONE(), 'minecraft:stone');
+assertTrue($registrar->serializer->serializeType(VanillaItems::STONE())->getName() === 'minecraft:stone', 'item registrar maps block item serializer');
 
 echo "item-data-smoke ok\n";

@@ -5,8 +5,14 @@ declare(strict_types=1);
 require __DIR__ . '/../autoload.php';
 
 use pocketmine\block\VanillaBlocks;
+use pocketmine\data\bedrock\block\BlockLegacyMetadata;
 use pocketmine\data\bedrock\block\BlockStateData;
+use pocketmine\data\bedrock\block\BlockStateNames;
+use pocketmine\data\bedrock\block\BlockStateStringValues;
+use pocketmine\data\bedrock\block\BlockTypeNames;
 use pocketmine\data\bedrock\block\convert\BlockObjectToStateSerializer;
+use pocketmine\data\bedrock\block\convert\BlockSerializerDeserializerRegistrar;
+use pocketmine\data\bedrock\block\convert\VanillaBlockMappings;
 use pocketmine\data\bedrock\block\convert\BlockStateToObjectDeserializer;
 use pocketmine\data\bedrock\block\convert\BlockStateWriter;
 use pocketmine\nbt\tag\ByteTag;
@@ -48,5 +54,15 @@ check($deserializer->deserializeBlock($airState)->getTypeId() === 'minecraft:air
 check($deserializer->deserialize($airState) === VanillaBlocks::AIR()->getStateId(), 'air deserializes to its state ID');
 check($deserializer->deserializeBlock($stoneState)->getTypeId() === 'minecraft:stone', 'stone deserializes to VanillaBlocks::STONE');
 check($deserializer->deserialize(BlockStateData::current('minecraft:test_toggle', ['powered' => new ByteTag(1)])) === VanillaBlocks::DIRT()->getStateId(), 'property-bearing state deserializes to a runtime state ID');
+
+check(BlockTypeNames::AIR === 'minecraft:air', 'block type constants expose Bedrock string IDs');
+check(BlockStateNames::PILLAR_AXIS === 'pillar_axis', 'block state name constants expose Bedrock state keys');
+check(BlockStateStringValues::PILLAR_AXIS_Y === 'pillar_axis_y', 'block state value constants expose string values');
+check(BlockLegacyMetadata::LIQUID_FALLING_FLAG === 0x08, 'legacy metadata constants expose useful bit flags');
+
+$registrar = VanillaBlockMappings::init();
+check($registrar instanceof BlockSerializerDeserializerRegistrar, 'VanillaBlockMappings::init returns a registrar');
+check($registrar->serializer->serializeBlock(VanillaBlocks::DIRT())->getName() === 'minecraft:dirt', 'vanilla mappings register dirt serializer');
+check($registrar->deserializer->deserializeBlock(BlockStateData::current('minecraft:grass'))->getTypeId() === 'minecraft:grass', 'vanilla mappings register grass deserializer');
 
 echo "block-data smoke ok\n";

@@ -4,11 +4,7 @@ declare(strict_types=1);
 
 namespace pocketmine\world\generator\populator;
 
-/**
- * Generated PMMP compatibility stub.
- * Replace with a handwritten bridge facade when behavior matters.
- */
 interface Populator
 {
-    public function populate(mixed ...$args): mixed;
+    public function populate(mixed $world = null, int $chunkX = 0, int $chunkZ = 0, mixed $random = null): void;
 }

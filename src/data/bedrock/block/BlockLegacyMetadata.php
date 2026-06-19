@@ -4,49 +4,45 @@ declare(strict_types=1);
 
 namespace pocketmine\data\bedrock\block;
 
-/**
- * Generated PMMP compatibility stub.
- * Replace with a handwritten bridge facade when behavior matters.
- */
 class BlockLegacyMetadata
 {
     public const CORAL_VARIANT_BRAIN = 0;
-    public const CORAL_VARIANT_BUBBLE = 0;
-    public const CORAL_VARIANT_FIRE = 0;
-    public const CORAL_VARIANT_HORN = 0;
-    public const CORAL_VARIANT_TUBE = 0;
-    public const LIQUID_FALLING_FLAG = 0;
-    public const MULTI_FACE_DIRECTION_FLAG_DOWN = 0;
-    public const MULTI_FACE_DIRECTION_FLAG_EAST = 0;
-    public const MULTI_FACE_DIRECTION_FLAG_NORTH = 0;
-    public const MULTI_FACE_DIRECTION_FLAG_SOUTH = 0;
-    public const MULTI_FACE_DIRECTION_FLAG_UP = 0;
-    public const MULTI_FACE_DIRECTION_FLAG_WEST = 0;
-    public const MUSHROOM_BLOCK_ALL_CAP = 0;
+    public const CORAL_VARIANT_BUBBLE = 1;
+    public const CORAL_VARIANT_FIRE = 2;
+    public const CORAL_VARIANT_HORN = 3;
+    public const CORAL_VARIANT_TUBE = 4;
+    public const LIQUID_FALLING_FLAG = 0x08;
+    public const MULTI_FACE_DIRECTION_FLAG_DOWN = 0x01;
+    public const MULTI_FACE_DIRECTION_FLAG_UP = 0x02;
+    public const MULTI_FACE_DIRECTION_FLAG_NORTH = 0x04;
+    public const MULTI_FACE_DIRECTION_FLAG_SOUTH = 0x08;
+    public const MULTI_FACE_DIRECTION_FLAG_WEST = 0x10;
+    public const MULTI_FACE_DIRECTION_FLAG_EAST = 0x20;
     public const MUSHROOM_BLOCK_ALL_PORES = 0;
-    public const MUSHROOM_BLOCK_ALL_STEM = 0;
-    public const MUSHROOM_BLOCK_CAP_EAST_SIDE = 0;
-    public const MUSHROOM_BLOCK_CAP_NORTHEAST_CORNER = 0;
-    public const MUSHROOM_BLOCK_CAP_NORTHWEST_CORNER = 0;
-    public const MUSHROOM_BLOCK_CAP_NORTH_SIDE = 0;
-    public const MUSHROOM_BLOCK_CAP_SOUTHEAST_CORNER = 0;
-    public const MUSHROOM_BLOCK_CAP_SOUTHWEST_CORNER = 0;
-    public const MUSHROOM_BLOCK_CAP_SOUTH_SIDE = 0;
-    public const MUSHROOM_BLOCK_CAP_TOP_ONLY = 0;
-    public const MUSHROOM_BLOCK_CAP_WEST_SIDE = 0;
-    public const MUSHROOM_BLOCK_STEM = 0;
-    public const RAIL_ASCENDING_EAST = 0;
-    public const RAIL_ASCENDING_NORTH = 0;
-    public const RAIL_ASCENDING_SOUTH = 0;
-    public const RAIL_ASCENDING_WEST = 0;
-    public const RAIL_CURVE_NORTHEAST = 0;
-    public const RAIL_CURVE_NORTHWEST = 0;
-    public const RAIL_CURVE_SOUTHEAST = 0;
-    public const RAIL_CURVE_SOUTHWEST = 0;
-    public const RAIL_STRAIGHT_EAST_WEST = 0;
+    public const MUSHROOM_BLOCK_CAP_NORTHWEST_CORNER = 1;
+    public const MUSHROOM_BLOCK_CAP_NORTH_SIDE = 2;
+    public const MUSHROOM_BLOCK_CAP_NORTHEAST_CORNER = 3;
+    public const MUSHROOM_BLOCK_CAP_WEST_SIDE = 4;
+    public const MUSHROOM_BLOCK_CAP_TOP_ONLY = 5;
+    public const MUSHROOM_BLOCK_CAP_EAST_SIDE = 6;
+    public const MUSHROOM_BLOCK_CAP_SOUTHWEST_CORNER = 7;
+    public const MUSHROOM_BLOCK_CAP_SOUTH_SIDE = 8;
+    public const MUSHROOM_BLOCK_CAP_SOUTHEAST_CORNER = 9;
+    public const MUSHROOM_BLOCK_STEM = 10;
+    public const MUSHROOM_BLOCK_ALL_CAP = 14;
+    public const MUSHROOM_BLOCK_ALL_STEM = 15;
     public const RAIL_STRAIGHT_NORTH_SOUTH = 0;
-    public const VINE_FLAG_EAST = 0;
-    public const VINE_FLAG_NORTH = 0;
-    public const VINE_FLAG_SOUTH = 0;
-    public const VINE_FLAG_WEST = 0;
+    public const RAIL_STRAIGHT_EAST_WEST = 1;
+    public const RAIL_ASCENDING_EAST = 2;
+    public const RAIL_ASCENDING_WEST = 3;
+    public const RAIL_ASCENDING_NORTH = 4;
+    public const RAIL_ASCENDING_SOUTH = 5;
+    public const RAIL_CURVE_SOUTHEAST = 6;
+    public const RAIL_CURVE_SOUTHWEST = 7;
+    public const RAIL_CURVE_NORTHWEST = 8;
+    public const RAIL_CURVE_NORTHEAST = 9;
+    public const VINE_FLAG_SOUTH = 0x01;
+    public const VINE_FLAG_WEST = 0x02;
+    public const VINE_FLAG_NORTH = 0x04;
+    public const VINE_FLAG_EAST = 0x08;
 }

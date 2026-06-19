@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace pocketmine\entity\projectile;
 
-/**
- * Generated PMMP compatibility stub.
- * Replace with a handwritten bridge facade when behavior matters.
- */
-class IceBomb
+class IceBomb extends Throwable
 {
-    public static function getNetworkTypeId(mixed ...$args): mixed { return null; }
-    public function getResultDamage(mixed ...$args): mixed { return null; }
+    private bool $hit = false;
+
+    public static function getNetworkTypeId(mixed ...$args): string { return 'minecraft:ice_bomb'; }
+    public function getResultDamage(mixed ...$args): int { return -1; }
+    public function onHit(mixed ...$args): void
+    {
+        $this->hit = true;
+        $this->flagForDespawn();
+    }
+    public function hasHit(): bool { return $this->hit; }
 }

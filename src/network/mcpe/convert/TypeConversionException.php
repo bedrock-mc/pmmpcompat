@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\convert;
 
-/**
- * Generated PMMP compatibility stub.
- * Replace with a handwritten bridge facade when behavior matters.
- */
-class TypeConversionException
+class TypeConversionException extends \RuntimeException
 {
-    public static function wrap(mixed ...$args): mixed { return null; }
+    public static function wrap(\Throwable $previous, string $message = ''): self
+    {
+        return new self($message !== '' ? $message : $previous->getMessage(), 0, $previous);
+    }
 }
