@@ -135,6 +135,8 @@ The Go package also provides an action application contract:
 
 Dragonfly/Lunar adapters should implement those interfaces around their native player/server handles. World and player mutations must still be scheduled through Dragonfly's correct goroutine or transaction boundary; `pmmpcompat` only normalizes and dispatches the intent.
 
+`host/dragonfly` is a separate Go module for concrete Dragonfly hosts. It imports Dragonfly and the transport-neutral host client, then adapts Dragonfly `*player.Player` and `*server.Server` values to the typed target interfaces. Generic actions are applied directly. Host-specific conversion points, such as PMMP form JSON to Dragonfly `form.Form`, allow-flight ability policy, exact health assignment, and PMMP item JSON to Dragonfly `item.Stack`, remain explicit callbacks so the adapter cannot silently invent lossy behavior.
+
 This is the intended integration shape for Lunar/Dragonfly work:
 
 1. Dragonfly event handler receives a native event.

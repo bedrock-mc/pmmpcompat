@@ -1,3 +1,3 @@
-module lunar/pmmpcompat/host/go
+module github.com/bedrock-mc/pmmpcompat/host/go
 
 go 1.23

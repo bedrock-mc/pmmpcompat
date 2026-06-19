@@ -64,6 +64,8 @@ go test ./...
 
 Lunar/Dragonfly code should integrate at this layer: keep the PHP process alive, forward normalized host events, and apply returned action records. The Go package includes `ApplyActions()`, `TargetResolver`, `PlayerTarget`, and `ServerTarget` so host code can map every emitted action through typed methods instead of switching on raw action strings in gameplay code.
 
+`host/dragonfly` contains the first concrete Dragonfly adapter module. It wraps Dragonfly players/servers as `PlayerTarget`/`ServerTarget`, maps common message/title/teleport/kick/transfer/gamemode/XP/flying/inventory-clear actions directly, and exposes extension callbacks for host-specific forms, allow-flight ability policy, exact health, item, and view-distance handling.
+
 ## Runtime Direction
 
 The intended production shape is:
