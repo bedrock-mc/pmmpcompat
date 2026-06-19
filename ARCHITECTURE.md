@@ -4,7 +4,7 @@
 
 Plugin metadata is read from PMMP-style `plugin.yml` files. The built-in parser intentionally covers the common no-dependency subset needed for plugin loading: scalar fields, nested maps, inline lists, and block lists for API versions, dependencies, load ordering, command aliases, and permissions.
 
-This is not a hand rewrite of the full PMMP server. The facade is guided by `tools/api-audit.php`, which compares public PMMP reference classes/methods/constants against this package. Missing API should be filled by real plugin compatibility needs and verified with focused tests.
+This is not a hand rewrite of the full PMMP server. The facade is guided by `tools/api-audit.php`, which compares public PMMP reference classes/methods/constants against this package. The audit is currently expected to report zero missing public classes and members. Compatibility work should now focus on behavior depth, host bridge fidelity, real plugin corpus coverage, and richer Bedrock registry data rather than adding generated placeholders.
 
 ## Mapping Policy
 
@@ -47,6 +47,8 @@ Host code should not ask PMMP plugins to handle protobuf or native host structs.
 `Runtime` converts those values into PMMP-style objects and events such as `PlayerJoinEvent`, `PlayerChatEvent`, `PlayerCommandPreprocessEvent`, and `BlockBreakEvent`.
 
 Host snapshots, such as inventory and player-state sync, update only the PHP compatibility mirror and must not emit host actions back to Dragonfly. Dragonfly remains authoritative for player/world state.
+
+Local compatibility subsystems such as `Server::getAsyncPool()`, `Server::getWorldManager()`, config files, SQLite usage from plugins, bundled dependency/virion classes, and scheduler ticks run inside PHP. They are local runtime compatibility unless they emit an explicit host action.
 
 ## PMMP To Host
 

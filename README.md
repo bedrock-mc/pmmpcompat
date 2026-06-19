@@ -20,7 +20,7 @@ The package intentionally exposes only `pocketmine\...` classes to plugin code. 
 - Transport-neutral `pocketmine\compat\Runtime` for host adapters to drive joins, quits, chat, commands, movement, block break/place, and scheduler ticks.
 - Simple `Config`, `TaskScheduler`, `ClosureTask`, `Vector3`, `Position`, `World`, `Block`, `Item`, `Inventory`, permissions.
 
-This is not full PMMP parity yet. Block/item/world/entity APIs are intentionally skeletal while the runtime boundary is stabilized.
+The facade is still intentionally Dragonfly-hosted, not a PocketMine server process, but the broad PMMP API shape is now present: the checked-in audit has zero missing public classes and zero missing public members against the local PMMP reference. Remaining work is about depth and fidelity of host mappings, generated Bedrock registry coverage, and real plugin corpus validation, not generated placeholder classes.
 
 ## Compatibility Audit
 
@@ -38,11 +38,12 @@ From this directory:
 
 ```bash
 php tools/smoke.php
+php tools/plugin-corpus-smoke.php
 php tools/ipc-smoke.php
 php -d phar.readonly=0 tools/phar-smoke.php
 ```
 
-The smoke tests create temporary PMMP-style plugin folders and phars, load them via `PluginLoader` and the JSON-lines runtime process, validate dependency order, run lifecycle hooks, copy bundled resources/configs, dispatch command aliases, dispatch listener events, exercise forms/common events including form response callbacks, run scheduler ticks, persist a simple config, and verify bridge actions back to the host.
+The smoke tests create temporary PMMP-style plugin folders and phars, load them via `PluginLoader` and the JSON-lines runtime process, validate dependency order, run lifecycle hooks, copy bundled resources/configs, dispatch command aliases, dispatch listener events, exercise forms/common events including form response callbacks, run scheduler ticks, persist configs and SQLite state, run local async task completion, exercise bundled virion-style classes, and verify bridge actions back to the host.
 
 For early experiments without Composer, require the package autoloader:
 

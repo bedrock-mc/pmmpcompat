@@ -25,7 +25,8 @@ assert(YmlServerProperties::MEMORY_MAIN_LIMIT === 'memory.main-limit');
 assert(VersionInfo::NAME === 'PocketMine-MP');
 assert(VersionInfo::VERSION() instanceof VersionString);
 assert(VersionInfo::BUILD_NUMBER() === 0);
-assert(strlen(VersionInfo::GIT_HASH()) === 40);
+$gitHash = VersionInfo::GIT_HASH();
+assert(preg_match('/^[a-f0-9]{40}(-dirty)?$/', $gitHash) === 1 || $gitHash === str_repeat('0', 40));
 
 $pocketmineYml = new Config($dir . '/pocketmine.yml', Config::YAML, [
     'memory' => ['main-limit' => 128],

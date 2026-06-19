@@ -10,8 +10,11 @@ use pocketmine\console\ConsoleCommandSender;
 use pocketmine\permission\PermissionManager;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginManager;
+use pocketmine\scheduler\AsyncPool;
 use pocketmine\scheduler\TaskScheduler;
 use pocketmine\utils\MainLogger;
+use pocketmine\world\World;
+use pocketmine\world\WorldManager;
 
 class Server
 {
@@ -30,6 +33,8 @@ class Server
     private PluginManager $pluginManager;
     private SimpleCommandMap $commandMap;
     private TaskScheduler $scheduler;
+    private AsyncPool $asyncPool;
+    private WorldManager $worldManager;
     private MainLogger $logger;
     private PermissionManager $permissionManager;
     private ConsoleCommandSender $consoleSender;
@@ -56,6 +61,8 @@ class Server
         $this->commandMap = new SimpleCommandMap();
         $this->pluginManager = new PluginManager($this);
         $this->scheduler = new TaskScheduler('server');
+        $this->asyncPool = new AsyncPool();
+        $this->worldManager = new WorldManager($this, $this->dataPath ?? '');
         $this->logger = new MainLogger('server');
         $this->permissionManager = new PermissionManager();
         $this->consoleSender = new ConsoleCommandSender($this);
@@ -64,6 +71,8 @@ class Server
         $this->dataPath = rtrim(getcwd() ?: sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
         $this->pluginPath = $this->dataPath . 'plugins' . DIRECTORY_SEPARATOR;
         $this->resourcePath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR;
+        $this->worldManager = new WorldManager($this, $this->dataPath . 'worlds');
+        $this->worldManager->setDefaultWorld(new World('world'));
     }
 
     public static function getInstance(): self
@@ -247,9 +256,9 @@ class Server
         return $command instanceof \pocketmine\command\PluginCommand ? $command : null;
     }
 
-    public function getAsyncPool(): never
+    public function getAsyncPool(): AsyncPool
     {
-        $this->unsupported('async pool');
+        return $this->asyncPool;
     }
 
     public function getConfigGroup(): never
@@ -287,9 +296,9 @@ class Server
         $this->unsupported('PocketMine updater');
     }
 
-    public function getWorldManager(): never
+    public function getWorldManager(): WorldManager
     {
-        $this->unsupported('world manager');
+        return $this->worldManager;
     }
 
     /** @return array<string, string[]> */

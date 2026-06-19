@@ -837,12 +837,9 @@ try {
 } catch (NbtDataException) {
 }
 assert($server->getTick() === 0);
-try {
-    $server->getWorldManager();
-    assert(false);
-} catch (LogicException $e) {
-    assert(str_contains($e->getMessage(), 'Dragonfly host adapter'));
-}
+assert($server->getWorldManager()->getDefaultWorld()?->getFolderName() === 'world');
+assert($server->getWorldManager()->generateWorld('smoke-world') === true);
+assert($server->getWorldManager()->isWorldLoaded('smoke-world') === true);
 
 $runs = 0;
 $delayedTask = new ClosureTask(static function () use (&$runs): void { $runs++; });

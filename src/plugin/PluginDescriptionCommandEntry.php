@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace pocketmine\plugin;
 
-final class PluginDescriptionCommandEntry
+final class PluginDescriptionCommandEntry implements \ArrayAccess
 {
     /** @param string[] $aliases */
     public function __construct(
@@ -36,4 +36,32 @@ final class PluginDescriptionCommandEntry
     public function getAliases(): array { return $this->aliases; }
     public function getPermission(): string { return $this->permission; }
     public function getPermissionDeniedMessage(): ?string { return $this->permissionDeniedMessage; }
+
+    public function offsetExists(mixed $offset): bool
+    {
+        return in_array($offset, ['description', 'usage', 'aliases', 'permission', 'permission-message', 'permission_message'], true);
+    }
+
+    public function offsetGet(mixed $offset): mixed
+    {
+        return match ($offset) {
+            'description' => $this->description,
+            'usage' => $this->usageMessage,
+            'aliases' => $this->aliases,
+            'permission' => $this->permission,
+            'permission-message',
+            'permission_message' => $this->permissionDeniedMessage,
+            default => null,
+        };
+    }
+
+    public function offsetSet(mixed $offset, mixed $value): void
+    {
+        throw new \LogicException(self::class . ' is immutable');
+    }
+
+    public function offsetUnset(mixed $offset): void
+    {
+        throw new \LogicException(self::class . ' is immutable');
+    }
 }
