@@ -52,6 +52,17 @@ func TestClientDrivesPMMPRuntimeProcess(t *testing.T) {
 		t.Fatalf("enable actions = %#v", actions)
 	}
 
+	commands, actions, err := client.Commands(ctx)
+	if err != nil {
+		t.Fatalf("commands: %v", err)
+	}
+	if len(actions) != 0 {
+		t.Fatalf("commands actions = %#v", actions)
+	}
+	if len(commands.Commands) != 4 || commands.Commands[0].Name != "echo" {
+		t.Fatalf("commands result = %#v", commands)
+	}
+
 	join, actions, err := client.PlayerJoin(ctx, "00000000-0000-4000-8000-000000000401", "Steve")
 	if err != nil {
 		t.Fatalf("join: %v", err)

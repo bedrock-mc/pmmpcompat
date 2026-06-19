@@ -56,6 +56,7 @@ function handleRequest(Runtime $runtime, HostActionQueue $queue, array $request)
             $runtime->enable();
             return ['enabled' => true];
         }),
+        'commands' => commands($runtime),
         'disable' => resultOf(static function () use ($runtime): array {
             $runtime->disable();
             return ['disabled' => true];
@@ -81,6 +82,27 @@ function handleRequest(Runtime $runtime, HostActionQueue $queue, array $request)
         'drain_actions' => [],
         default => throw new RuntimeException("Unknown runtime request type: {$type}"),
     };
+}
+
+/** @return array<string, mixed> */
+function commands(Runtime $runtime): array
+{
+    $seen = [];
+    $commands = [];
+    foreach ($runtime->server()->getCommandMap()->getCommands() as $label => $command) {
+        $id = spl_object_id($command);
+        if (isset($seen[$id])) {
+            continue;
+        }
+        $seen[$id] = true;
+        $commands[] = [
+            'name' => $command->getName(),
+            'description' => $command->getDescription(),
+            'aliases' => $command->getAliases(),
+            'permission' => $command->getPermission(),
+        ];
+    }
+    return ['commands' => $commands];
 }
 
 /** @return array<string, mixed> */

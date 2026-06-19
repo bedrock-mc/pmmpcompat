@@ -78,6 +78,17 @@ type LoadResult struct {
 	Plugins []string `json:"plugins"`
 }
 
+type CommandInfo struct {
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Aliases     []string `json:"aliases"`
+	Permission  string   `json:"permission"`
+}
+
+type CommandsResult struct {
+	Commands []CommandInfo `json:"commands"`
+}
+
 type PlayerJoinResult struct {
 	Player      Player `json:"player"`
 	JoinMessage string `json:"join_message"`
@@ -97,6 +108,12 @@ type ChatResult struct {
 
 type CommandResult struct {
 	Handled bool `json:"handled"`
+}
+
+type PlayerMoveResult struct {
+	Cancelled bool     `json:"cancelled"`
+	From      Position `json:"from"`
+	To        Position `json:"to"`
 }
 
 type BlockEventResult struct {
@@ -248,6 +265,12 @@ func (c *Client) Enable(ctx context.Context) ([]Action, error) {
 	return c.call(ctx, "enable", nil, nil)
 }
 
+func (c *Client) Commands(ctx context.Context) (CommandsResult, []Action, error) {
+	var out CommandsResult
+	actions, err := c.call(ctx, "commands", nil, &out)
+	return out, actions, err
+}
+
 func (c *Client) Disable(ctx context.Context) ([]Action, error) {
 	return c.call(ctx, "disable", nil, nil)
 }
@@ -273,6 +296,12 @@ func (c *Client) Chat(ctx context.Context, uuid, name, message string) (ChatResu
 func (c *Client) Command(ctx context.Context, uuid, name, command string, args []string) (CommandResult, []Action, error) {
 	var out CommandResult
 	actions, err := c.call(ctx, "command", map[string]any{"uuid": uuid, "name": name, "command": command, "args": args}, &out)
+	return out, actions, err
+}
+
+func (c *Client) PlayerMove(ctx context.Context, uuid, name string, to Position) (PlayerMoveResult, []Action, error) {
+	var out PlayerMoveResult
+	actions, err := c.call(ctx, "player_move", map[string]any{"uuid": uuid, "name": name, "to": to}, &out)
 	return out, actions, err
 }
 

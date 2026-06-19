@@ -15,9 +15,9 @@ The package intentionally exposes only `pocketmine\...` classes to plugin code. 
 - Form facade: `SimpleForm`, `ModalForm`, `CustomForm`, `Player::sendForm()` capture.
 - PMMP-style command registration from `plugin.yml`, aliases, permission checks, and `onCommand()`.
 - Reflected listener registration through `PluginManager::registerEvents()`.
-- Events: join, quit, chat, command preprocess, move, block break, block place, item use/drop/interact, entity damage.
+- Events: join, quit, chat, command preprocess/command, move, block break, block place, item use/drop/interact, entity damage, death, respawn.
 - Directory plugin loading sorted by `depend`, `softdepend`, and `loadbefore`.
-- Transport-neutral `pocketmine\compat\Runtime` for host adapters to drive joins, quits, chat, commands, movement, block break/place, and scheduler ticks.
+- Transport-neutral `pocketmine\compat\Runtime` for host adapters to drive joins, quits, chat, commands, movement, block break/place/interact, damage, death, respawn, forms, inventory/state sync, and scheduler ticks.
 - Simple `Config`, `TaskScheduler`, `ClosureTask`, `Vector3`, `Position`, `World`, `Block`, `Item`, `Inventory`, permissions.
 
 The facade is still intentionally Dragonfly-hosted, not a PocketMine server process, but the broad PMMP API shape is now present: the checked-in audit has zero missing public classes and zero missing public members against the local PMMP reference. Remaining work is about depth and fidelity of host mappings, generated Bedrock registry coverage, and real plugin corpus validation, not generated placeholder classes.
@@ -83,7 +83,40 @@ Set `PMMPCOMPAT_PHP=/path/to/pmmp-php/bin/php7/bin/php` and, when needed, `PMMPC
 
 Lunar/Dragonfly code should integrate at this layer: keep the PHP process alive, forward normalized host events, and apply returned action records. The Go package includes `ApplyActions()`, `TargetResolver`, `PlayerTarget`, and `ServerTarget` so host code can map every emitted action through typed methods instead of switching on raw action strings in gameplay code.
 
-`host/dragonfly` contains the first concrete Dragonfly adapter module. It wraps Dragonfly players/servers as `PlayerTarget`/`ServerTarget`, maps common message/title/teleport/kick/transfer/gamemode/XP/flying/inventory-clear actions directly, preserves PMMP form JSON through `RawFormMapper`, and exposes extension callbacks for allow-flight ability policy, exact health, item, and view-distance handling.
+`host/dragonfly` contains the first concrete Dragonfly adapter module. It wraps Dragonfly players/servers as `PlayerTarget`/`ServerTarget`, maps common message/title/teleport/kick/transfer/gamemode/XP/flying/inventory-clear actions directly, preserves PMMP form JSON through `Runtime.FormMapper()`, registers Dragonfly command stubs for PMMP plugin commands through `Runtime.RegisterCommands()`, and exposes extension callbacks for allow-flight ability policy, exact health, item, world lookup, and view-distance handling.
+
+Minimal Dragonfly integration shape:
+
+```go
+client, err := pmmpcompat.StartWithArgs(ctx, phpBinary, phpArgs, runtimeScript, pluginsDir)
+if err != nil {
+    return err
+}
+
+rt := dragonfly.NewRuntime(client, srv, dragonfly.RuntimeOptions{
+    Options: dragonfly.Options{
+        ItemMapper: dragonfly.DefaultItemMapper,
+        HealthSetter: dragonfly.EventedHealthSetter,
+        AllowFlightSetter: yourAllowFlightSetter,
+        ViewDistanceSetter: yourViewDistanceSetter,
+    },
+    WorldLookup: yourWorldLookup,
+})
+
+if _, _, err := client.Load(ctx); err != nil { return err }
+if _, err := client.Enable(ctx); err != nil { return err }
+if err := rt.RegisterCommands(ctx); err != nil { return err }
+
+// In the accept loop, after Dragonfly has spawned the player:
+h, err := rt.RegisterPlayer(ctx, p)
+if err != nil {
+    p.Disconnect("PocketMine runtime error")
+    return
+}
+p.Handle(h)
+```
+
+The Dragonfly handler forwards movement, chat, PMMP command stubs, block break/place, block interact, damage, death, respawn, quit, form response, inventory sync, and player state sync into the PHP runtime, then applies returned PMMP bridge actions back to Dragonfly. Existing PMMP dependencies, virions, and soft dependencies should still be supplied with the plugin package; this library does not vendor or reimplement plugin-specific dependencies.
 
 ## Runtime Direction
 
