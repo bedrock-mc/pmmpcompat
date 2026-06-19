@@ -6,6 +6,7 @@ namespace pocketmine\player;
 
 use pocketmine\command\CommandSender;
 use pocketmine\compat\PlayerBridge;
+use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\form\Form;
 use pocketmine\inventory\Inventory;
 use pocketmine\item\Item;
@@ -14,6 +15,8 @@ use pocketmine\math\Vector3;
 use pocketmine\Server;
 use pocketmine\world\Position;
 use pocketmine\world\World;
+use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 
 class Player implements CommandSender
 {
@@ -50,25 +53,28 @@ class Player implements CommandSender
     private float $flightSpeedMultiplier = self::DEFAULT_FLIGHT_SPEED_MULTIPLIER;
     private ?Position $spawn = null;
     private ?Position $deathPosition = null;
+    private ?EntityDamageEvent $lastDamageCause = null;
     /** @var array<string, bool> */
     private array $hiddenPlayers = [];
     /** @var array<string, UsedChunkStatus> */
     private array $usedChunks = [];
     private bool $op = false;
+    private UuidInterface $uniqueId;
 
     public function __construct(
         private string $uuid,
         private string $name,
         private ?PlayerBridge $bridge = null,
     ) {
+        $this->uniqueId = Uuid::fromString($uuid);
         $this->inventory = new Inventory(36, $bridge);
         $this->gamemode = GameMode::SURVIVAL();
         $this->displayName = $name;
     }
 
-    public function getUniqueId(): string
+    public function getUniqueId(): UuidInterface
     {
-        return $this->uuid;
+        return $this->uniqueId;
     }
 
     public function getName(): string
@@ -179,6 +185,16 @@ class Player implements CommandSender
     {
         $this->maxHealth = max(1.0, $maxHealth);
         $this->health = max(0.0, min($health, $this->maxHealth));
+    }
+
+    public function getLastDamageCause(): ?EntityDamageEvent
+    {
+        return $this->lastDamageCause;
+    }
+
+    public function setLastDamageCause(?EntityDamageEvent $event): void
+    {
+        $this->lastDamageCause = $event;
     }
 
     public function getGamemode(): GameMode
@@ -354,9 +370,9 @@ class Player implements CommandSender
     public function canCollideWith(mixed $entity): bool { return true; }
     public function canEat(bool $ignoreHunger = false): bool { return true; }
     public function canInteract(Vector3 $pos, float $maxDistance, float $maxDiff = M_SQRT3 / 2): bool { return true; }
-    public function canSee(self $player): bool { return !isset($this->hiddenPlayers[$player->getUniqueId()]); }
-    public function hidePlayer(self $player): void { $this->hiddenPlayers[$player->getUniqueId()] = true; }
-    public function showPlayer(self $player): void { unset($this->hiddenPlayers[$player->getUniqueId()]); }
+    public function canSee(self $player): bool { return !isset($this->hiddenPlayers[$player->getUniqueId()->toString()]); }
+    public function hidePlayer(self $player): void { $this->hiddenPlayers[$player->getUniqueId()->toString()] = true; }
+    public function showPlayer(self $player): void { unset($this->hiddenPlayers[$player->getUniqueId()->toString()]); }
 
     public function getSpawn(): ?Position { return $this->spawn; }
     public function setSpawn(?Position $spawn): void { $this->spawn = $spawn; }

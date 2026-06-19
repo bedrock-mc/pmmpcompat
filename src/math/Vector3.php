@@ -12,6 +12,9 @@ class Vector3
     public function getX(): float { return $this->x; }
     public function getY(): float { return $this->y; }
     public function getZ(): float { return $this->z; }
+    public function getFloorX(): int { return (int) floor($this->x); }
+    public function getFloorY(): int { return (int) floor($this->y); }
+    public function getFloorZ(): int { return (int) floor($this->z); }
     public function add(float $x, float $y = 0.0, float $z = 0.0): self { return new self($this->x + $x, $this->y + $y, $this->z + $z); }
     public function distanceSquared(self $v): float { return (($this->x - $v->x) ** 2) + (($this->y - $v->y) ** 2) + (($this->z - $v->z) ** 2); }
     public function equals(self $v): bool { return $this->x === $v->x && $this->y === $v->y && $this->z === $v->z; }

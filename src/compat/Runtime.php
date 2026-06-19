@@ -4,20 +4,30 @@ declare(strict_types=1);
 
 namespace pocketmine\compat;
 
+use pocketmine\block\Block;
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\block\BlockPlaceEvent;
+use pocketmine\event\entity\EntityDamageByEntityEvent;
+use pocketmine\event\entity\EntityDamageEvent;
+use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\event\player\PlayerCommandPreprocessEvent;
+use pocketmine\event\player\PlayerDeathEvent;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerMoveEvent;
 use pocketmine\event\player\PlayerQuitEvent;
+use pocketmine\event\player\PlayerRespawnEvent;
+use pocketmine\event\server\CommandEvent;
 use pocketmine\item\Item;
+use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\player\GameMode;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\plugin\PluginLoader;
 use pocketmine\Server;
+use pocketmine\world\BlockTransaction;
+use pocketmine\world\Position;
 
 /**
  * Transport-neutral PMMP plugin host.
@@ -112,7 +122,14 @@ class Runtime
             return true;
         }
 
-        $parts = preg_split('/\s+/', ltrim($preprocess->getMessage(), '/')) ?: [];
+        $commandLine = ltrim($preprocess->getMessage(), '/');
+        $commandEvent = new CommandEvent($player, '/' . $commandLine);
+        $this->server->getPluginManager()->callEvent($commandEvent);
+        if ($commandEvent->isCancelled()) {
+            return true;
+        }
+
+        $parts = preg_split('/\s+/', ltrim($commandEvent->getCommand(), '/')) ?: [];
         $command = array_shift($parts) ?? '';
         $dispatchArgs = [];
         foreach ($parts as $arg) {
@@ -131,18 +148,82 @@ class Runtime
         return $event;
     }
 
-    public function blockBreak(string $uuid, string $name, Vector3 $position): BlockBreakEvent
+    public function entityDamage(
+        string $targetUuid,
+        string $targetName,
+        float $baseDamage,
+        int $cause = EntityDamageEvent::CAUSE_CUSTOM,
+        ?string $damagerUuid = null,
+        ?string $damagerName = null,
+    ): EntityDamageEvent {
+        $target = $this->server->getPlayerByUUID($targetUuid) ?? new Player($targetUuid, $targetName);
+        if ($damagerUuid !== null) {
+            $damager = $this->server->getPlayerByUUID($damagerUuid) ?? new Player($damagerUuid, $damagerName ?? $damagerUuid);
+            $event = new EntityDamageByEntityEvent($damager, $target, $cause, $baseDamage);
+        } else {
+            $event = new EntityDamageEvent($target, $baseDamage, $cause);
+        }
+        $this->server->getPluginManager()->callEvent($event);
+        if (!$event->isCancelled()) {
+            $target->setLastDamageCause($event);
+        }
+        return $event;
+    }
+
+    /** @param Item[] $drops */
+    public function playerDeath(string $uuid, string $name, array $drops = [], int $xp = 0, string|\pocketmine\lang\Translatable|null $deathMessage = null): PlayerDeathEvent
     {
         $player = $this->server->getPlayerByUUID($uuid) ?? new Player($uuid, $name);
-        $event = new BlockBreakEvent($player, $position);
+        $event = new PlayerDeathEvent($player, $drops, $xp, $deathMessage);
         $this->server->getPluginManager()->callEvent($event);
         return $event;
     }
 
-    public function blockPlace(string $uuid, string $name, Vector3 $position): BlockPlaceEvent
+    public function playerRespawn(string $uuid, string $name, ?Position $position = null): PlayerRespawnEvent
     {
         $player = $this->server->getPlayerByUUID($uuid) ?? new Player($uuid, $name);
-        $event = new BlockPlaceEvent($player, $position);
+        $event = new PlayerRespawnEvent($player, $position ?? $player->getSpawn() ?? $player->getWorld()->getSpawnLocation());
+        $this->server->getPluginManager()->callEvent($event);
+        return $event;
+    }
+
+    public function blockBreak(string $uuid, string $name, Vector3 $position, ?Block $block = null, ?Item $item = null): BlockBreakEvent
+    {
+        $player = $this->server->getPlayerByUUID($uuid) ?? new Player($uuid, $name);
+        $event = new BlockBreakEvent($player, $this->positionedBlock($player, $position, $block), $item);
+        $this->server->getPluginManager()->callEvent($event);
+        return $event;
+    }
+
+    public function blockPlace(string $uuid, string $name, Vector3 $position, ?Block $block = null, ?Item $item = null): BlockPlaceEvent
+    {
+        $player = $this->server->getPlayerByUUID($uuid) ?? new Player($uuid, $name);
+        $placed = $this->positionedBlock($player, $position, $block);
+        $transaction = (new BlockTransaction($player->getWorld()))->addBlock($position, $placed);
+        $event = new BlockPlaceEvent($player, $placed, $transaction, null, $item);
+        $this->server->getPluginManager()->callEvent($event);
+        return $event;
+    }
+
+    public function playerInteract(
+        string $uuid,
+        string $name,
+        Vector3 $position,
+        int $action = PlayerInteractEvent::RIGHT_CLICK_BLOCK,
+        ?Block $block = null,
+        ?Item $item = null,
+        ?Vector3 $touchVector = null,
+        ?int $face = null,
+    ): PlayerInteractEvent {
+        $player = $this->server->getPlayerByUUID($uuid) ?? new Player($uuid, $name);
+        $event = new PlayerInteractEvent(
+            $player,
+            $item ?? VanillaItems::AIR(),
+            $this->positionedBlock($player, $position, $block),
+            $touchVector,
+            $action,
+            $face,
+        );
         $this->server->getPluginManager()->callEvent($event);
         return $event;
     }
@@ -193,5 +274,15 @@ class Runtime
         foreach ($this->plugins as $plugin) {
             $plugin->__pmmpTickScheduler($currentTick);
         }
+    }
+
+    private function positionedBlock(Player $player, Vector3 $position, ?Block $block): Block
+    {
+        $block ??= $player->getWorld()->getBlock($position);
+        if ($block->getPosition() === null) {
+            $block = clone $block;
+            $block->position($player->getWorld(), $position->getFloorX(), $position->getFloorY(), $position->getFloorZ());
+        }
+        return $block;
     }
 }

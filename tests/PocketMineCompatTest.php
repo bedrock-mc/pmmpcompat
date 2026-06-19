@@ -24,6 +24,7 @@ use pocketmine\scheduler\ClosureTask;
 use pocketmine\Server;
 use pocketmine\utils\Config;
 use pocketmine\world\World;
+use Ramsey\Uuid\UuidInterface;
 
 final class PocketMineCompatTest extends TestCase
 {
@@ -57,7 +58,7 @@ final class PocketMineCompatTest extends TestCase
         self::assertNotNull($server->getCommandMap()->getCommand('hello'));
         self::assertNotNull($server->getPermissionManager()->getPermission('fixture.use'));
 
-        $sender = new Player('uuid-1', 'Steve');
+        $sender = new Player('00000000-0000-4000-8000-000000000001', 'Steve');
         self::assertTrue($server->getCommandMap()->dispatch($sender, 'hello', ['world']));
         self::assertSame(['no permission'], $sender->sentMessages());
         $sender->addPermission('fixture.use');
@@ -95,7 +96,7 @@ final class PocketMineCompatTest extends TestCase
         };
 
         $plugin->enableForTest($server);
-        $player = new Player('uuid-2', 'Alex');
+        $player = new Player('00000000-0000-4000-8000-000000000002', 'Alex');
         $join = new PlayerJoinEvent($player);
         $chat = new PlayerChatEvent($player, 'hello');
 
@@ -161,7 +162,9 @@ final class PocketMineCompatTest extends TestCase
         $server->getPermissionManager()->addPermission(new Permission('fixture.use'));
         self::assertNotNull($server->getPermissionManager()->getPermission('fixture.use'));
 
-        $player = new Player('uuid-3', 'Casey');
+        $player = new Player('00000000-0000-4000-8000-000000000003', 'Casey');
+        self::assertInstanceOf(UuidInterface::class, $player->getUniqueId());
+        self::assertSame('00000000-0000-4000-8000-000000000003', $player->getUniqueId()->toString());
         self::assertFalse($player->hasPermission('fixture.use'));
         $player->addPermission('fixture.use');
         self::assertTrue($player->hasPermission('fixture.use'));
@@ -177,13 +180,14 @@ final class PocketMineCompatTest extends TestCase
 
         $server->addPlayer($player);
         self::assertSame($player, $server->getPlayerExact('Casey'));
+        self::assertSame($player, $server->getPlayerByUUID($player->getUniqueId()));
         $server->getConsoleSender()->sendMessage('server message');
         self::assertSame(['server message'], $server->getConsoleSender()->sentMessages());
     }
 
     public function testFormsAndCommonEvents(): void
     {
-        $player = new Player('uuid-4', 'Riley');
+        $player = new Player('00000000-0000-4000-8000-000000000004', 'Riley');
         $response = null;
         $form = (new SimpleForm('Menu', 'Pick one', static function (Player $player, mixed $data) use (&$response): void {
             $response = [$player->getName(), $data];

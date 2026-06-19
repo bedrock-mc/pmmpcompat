@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace pocketmine;
 
 use pocketmine\command\SimpleCommandMap;
+use pocketmine\command\CommandSender;
 use pocketmine\compat\ServerBridge;
+use pocketmine\event\server\CommandEvent;
 use pocketmine\console\ConsoleCommandSender;
 use pocketmine\permission\PermissionManager;
 use pocketmine\player\Player;
@@ -258,6 +260,19 @@ class Server
         return $command instanceof \pocketmine\command\PluginCommand ? $command : null;
     }
 
+    public function dispatchCommand(CommandSender $sender, string $commandLine): bool
+    {
+        $event = new CommandEvent($sender, '/' . ltrim($commandLine, '/'));
+        $this->pluginManager->callEvent($event);
+        if ($event->isCancelled()) {
+            return true;
+        }
+        $parts = preg_split('/\s+/', ltrim($event->getCommand(), '/')) ?: [];
+        $name = array_shift($parts) ?? '';
+        $args = array_values(array_filter($parts, static fn(string $part): bool => $part !== ''));
+        return $name !== '' && $this->commandMap->dispatch($sender, $name, $args);
+    }
+
     public function getAsyncPool(): AsyncPool
     {
         return $this->asyncPool;
@@ -330,12 +345,12 @@ class Server
         return null;
     }
 
-    public function getPlayerByUUID(string $uuid): ?Player
+    public function getPlayerByUUID(string|\Stringable $uuid): ?Player
     {
-        return $this->players[$uuid] ?? null;
+        return $this->players[(string) $uuid] ?? null;
     }
 
-    public function getPlayerByRawUUID(string $uuid): ?Player
+    public function getPlayerByRawUUID(string|\Stringable $uuid): ?Player
     {
         return $this->getPlayerByUUID($uuid);
     }
@@ -375,12 +390,12 @@ class Server
 
     public function addPlayer(Player $player): void
     {
-        $this->players[$player->getUniqueId()] = $player;
+        $this->players[$player->getUniqueId()->toString()] = $player;
     }
 
-    public function removePlayer(string $uuid): void
+    public function removePlayer(string|\Stringable $uuid): void
     {
-        unset($this->players[$uuid]);
+        unset($this->players[(string) $uuid]);
     }
 
     public function tickSchedulers(int $currentTick): void

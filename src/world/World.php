@@ -73,6 +73,7 @@ class World
 
     public function setBlock(Vector3 $pos, Block $block): void
     {
+        $block->position($this, (int) floor($pos->x), (int) floor($pos->y), (int) floor($pos->z));
         $this->blocks[$this->key($pos)] = $block;
     }
 
@@ -80,12 +81,12 @@ class World
 
     public function addPlayer(Player $player): void
     {
-        $this->players[$player->getUniqueId()] = $player;
+        $this->players[$player->getUniqueId()->toString()] = $player;
     }
 
     public function removePlayer(Player $player): void
     {
-        unset($this->players[$player->getUniqueId()]);
+        unset($this->players[$player->getUniqueId()->toString()]);
     }
 
     /** @return Player[] */

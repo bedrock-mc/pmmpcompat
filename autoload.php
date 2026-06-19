@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 defined('PMMPCOMPAT_AUTOLOADER_PATH') || define('PMMPCOMPAT_AUTOLOADER_PATH', __FILE__);
 
+$composerAutoload = __DIR__ . '/vendor/autoload.php';
+if (is_file($composerAutoload)) {
+    require_once $composerAutoload;
+}
+
 spl_autoload_register(static function (string $class): void {
     $prefixes = [
         'pocketmine\\' => __DIR__ . '/src/',

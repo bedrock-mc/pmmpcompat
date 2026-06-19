@@ -582,7 +582,7 @@ assert(stream_get_contents($resource) === 'resource body');
 fclose($resource);
 assert(array_key_exists('nested/message.txt', $plugin->getResources()));
 
-$sender = new Player('uuid', 'Steve');
+$sender = new Player('00000000-0000-4000-8000-000000000201', 'Steve');
 $commandEvent = new \pocketmine\event\server\CommandEvent($sender, 'hello there');
 assert($commandEvent->getSender() === $sender && $commandEvent->getCommand() === 'hello there');
 $commandEvent->setCommand('changed');
@@ -733,7 +733,7 @@ $server->getPluginManager()->registerEvents(new class($hit) implements Listener 
     public function onJoin(PlayerJoinEvent $event): void { $this->hit = $event->getPlayer()->getName() === 'Alex'; }
     public function onChat(PlayerChatEvent $event): void { $event->setMessage(strtoupper($event->getMessage())); }
 }, $plugin);
-$player = new Player('uuid2', 'Alex');
+$player = new Player('00000000-0000-4000-8000-000000000202', 'Alex');
 $chat = new PlayerChatEvent($player, 'hello');
 $server->getPluginManager()->callEvent(new PlayerJoinEvent($player));
 $server->getPluginManager()->callEvent($chat);
@@ -792,11 +792,11 @@ assert($closureHit === false);
 
 $runtime = new Runtime('/path/that/does/not/exist', $server);
 assert($server->getPluginPath() === '/path/that/does/not/exist' . DIRECTORY_SEPARATOR);
-$join = $runtime->playerJoin('uuid3', 'Riley');
-$runtimeChat = $runtime->chat('uuid3', 'Riley', 'runtime');
+$join = $runtime->playerJoin('00000000-0000-4000-8000-000000000204', 'Riley');
+$runtimeChat = $runtime->chat('00000000-0000-4000-8000-000000000204', 'Riley', 'runtime');
 assert($join->getPlayer()->getName() === 'Riley');
 assert($runtimeChat->getMessage() === 'RUNTIME');
-assert($server->getPlayerByRawUUID('uuid3')?->getName() === 'Riley');
+assert($server->getPlayerByRawUUID('00000000-0000-4000-8000-000000000204')?->getName() === 'Riley');
 assert($server->getPlayerByPrefix('Ril')?->getName() === 'Riley');
 assert($server->getOfflinePlayer('Riley')?->getName() === 'Riley');
 assert($server->getOfflinePlayerData('missing') === null);
@@ -1435,7 +1435,7 @@ try {
     assert(false);
 } catch (TransactionCancelledException) {
 }
-$creative = new Player('creative-uuid', 'Builder');
+$creative = new Player('00000000-0000-4000-8000-000000000203', 'Builder');
 $creative->setGamemode(\pocketmine\player\GameMode::CREATIVE());
 $creative->getCreativeInventory()->addItem(VanillaItems::DIAMOND());
 $createAction = new CreateItemAction(VanillaItems::DIAMOND());

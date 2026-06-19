@@ -166,7 +166,7 @@ $runtime->enable();
 $plugins = array_map(static fn($plugin): string => $plugin->getName(), $runtime->plugins());
 assertSame(['SupportPlugin', 'RuntimePlugin'], $plugins, 'load order honours loadbefore/softdepend');
 
-$join = $runtime->playerJoin('uuid-corpus', 'Alex', $queue->forPlayer('uuid-corpus'));
+$join = $runtime->playerJoin('00000000-0000-4000-8000-000000000301', 'Alex', $queue->forPlayer('00000000-0000-4000-8000-000000000301'));
 assertSame('Alex', $join->getPlayer()->getName(), 'join returns player');
 $actions = $queue->drain();
 assertAction($actions, 'player.send_message', 'join message bridge action');
@@ -174,19 +174,19 @@ assertAction($actions, 'player.inventory.set_item', 'inventory bridge action');
 assertAction($actions, 'player.set_health', 'health bridge action');
 assertAction($actions, 'player.send_form', 'form bridge action');
 
-$chat = $runtime->chat('uuid-corpus', 'Alex', 'hello db');
+$chat = $runtime->chat('00000000-0000-4000-8000-000000000301', 'Alex', 'hello db');
 assertSame('HELLO DB', $chat->getMessage(), 'listener mutates chat');
 
-assertSame(true, $runtime->command('uuid-corpus', 'Alex', 'corp', ['one', 'two']), 'alias command dispatches');
+assertSame(true, $runtime->command('00000000-0000-4000-8000-000000000301', 'Alex', 'corp', ['one', 'two']), 'alias command dispatches');
 $actions = $queue->drain();
 assertAction($actions, 'player.send_message', 'command message bridge action');
 assertAction($actions, 'server.broadcast_message', 'server broadcast bridge action');
 
-assertSame(true, $runtime->formResponse('uuid-corpus', 1, 0), 'form response is handled');
+assertSame(true, $runtime->formResponse('00000000-0000-4000-8000-000000000301', 1, 0), 'form response is handled');
 $actions = $queue->drain();
 assertAction($actions, 'player.send_message', 'form response bridge action');
 
-$runtime->syncPlayerInventory('uuid-corpus', [5 => VanillaItems::DIRT()->setCount(3)]);
+$runtime->syncPlayerInventory('00000000-0000-4000-8000-000000000301', [5 => VanillaItems::DIRT()->setCount(3)]);
 assertSame('minecraft:dirt', $join->getPlayer()->getInventory()->getItem(5)->getTypeId(), 'host inventory sync updates mirror');
 
 for ($tick = 1; $tick <= 3; $tick++) {

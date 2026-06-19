@@ -64,6 +64,11 @@ type Position struct {
 	World string  `json:"world,omitempty"`
 }
 
+type Block struct {
+	TypeID string `json:"type_id"`
+	Name   string `json:"name"`
+}
+
 type Player struct {
 	UUID string `json:"uuid"`
 	Name string `json:"name"`
@@ -84,12 +89,61 @@ type PlayerQuitResult struct {
 }
 
 type ChatResult struct {
-	Cancelled bool   `json:"cancelled"`
-	Message   string `json:"message"`
+	Cancelled        bool   `json:"cancelled"`
+	Message          string `json:"message"`
+	FormattedMessage string `json:"formatted_message"`
+	RecipientCount   int    `json:"recipient_count"`
 }
 
 type CommandResult struct {
 	Handled bool `json:"handled"`
+}
+
+type BlockEventResult struct {
+	Cancelled bool     `json:"cancelled"`
+	Position  Position `json:"position"`
+	Block     *struct {
+		TypeID   string    `json:"type_id"`
+		Name     string    `json:"name"`
+		Position *Position `json:"position"`
+	} `json:"block,omitempty"`
+	Blocks []struct {
+		X     int `json:"x"`
+		Y     int `json:"y"`
+		Z     int `json:"z"`
+		Block struct {
+			TypeID   string    `json:"type_id"`
+			Name     string    `json:"name"`
+			Position *Position `json:"position"`
+		} `json:"block"`
+	} `json:"blocks,omitempty"`
+}
+
+type PlayerInteractResult struct {
+	Cancelled bool     `json:"cancelled"`
+	Position  Position `json:"position"`
+	UseItem   bool     `json:"use_item"`
+	UseBlock  bool     `json:"use_block"`
+}
+
+type EntityDamageResult struct {
+	Cancelled   bool    `json:"cancelled"`
+	BaseDamage  float64 `json:"base_damage"`
+	FinalDamage float64 `json:"final_damage"`
+	Cause       int     `json:"cause"`
+	Damager     *Player `json:"damager,omitempty"`
+}
+
+type PlayerDeathResult struct {
+	DeathMessage       string `json:"death_message"`
+	DeathScreenMessage string `json:"death_screen_message"`
+	KeepInventory      bool   `json:"keep_inventory"`
+	KeepXP             bool   `json:"keep_xp"`
+	XP                 int    `json:"xp"`
+}
+
+type PlayerRespawnResult struct {
+	Position Position `json:"position"`
 }
 
 type InventoryItem struct {
@@ -219,6 +273,76 @@ func (c *Client) Chat(ctx context.Context, uuid, name, message string) (ChatResu
 func (c *Client) Command(ctx context.Context, uuid, name, command string, args []string) (CommandResult, []Action, error) {
 	var out CommandResult
 	actions, err := c.call(ctx, "command", map[string]any{"uuid": uuid, "name": name, "command": command, "args": args}, &out)
+	return out, actions, err
+}
+
+func (c *Client) BlockBreak(ctx context.Context, uuid, name string, position Position, block *Block, item *InventoryItem) (BlockEventResult, []Action, error) {
+	var out BlockEventResult
+	payload := map[string]any{"uuid": uuid, "name": name, "position": position}
+	if block != nil {
+		payload["block"] = block
+	}
+	if item != nil {
+		payload["item"] = item
+	}
+	actions, err := c.call(ctx, "block_break", payload, &out)
+	return out, actions, err
+}
+
+func (c *Client) BlockPlace(ctx context.Context, uuid, name string, position Position, block *Block, item *InventoryItem) (BlockEventResult, []Action, error) {
+	var out BlockEventResult
+	payload := map[string]any{"uuid": uuid, "name": name, "position": position}
+	if block != nil {
+		payload["block"] = block
+	}
+	if item != nil {
+		payload["item"] = item
+	}
+	actions, err := c.call(ctx, "block_place", payload, &out)
+	return out, actions, err
+}
+
+func (c *Client) PlayerInteract(ctx context.Context, uuid, name string, position Position, action int, block *Block, item *InventoryItem) (PlayerInteractResult, []Action, error) {
+	var out PlayerInteractResult
+	payload := map[string]any{"uuid": uuid, "name": name, "position": position, "action": action}
+	if block != nil {
+		payload["block"] = block
+	}
+	if item != nil {
+		payload["item"] = item
+	}
+	actions, err := c.call(ctx, "player_interact", payload, &out)
+	return out, actions, err
+}
+
+func (c *Client) EntityDamage(ctx context.Context, uuid, name string, baseDamage float64, cause int, damagerUUID, damagerName string) (EntityDamageResult, []Action, error) {
+	var out EntityDamageResult
+	payload := map[string]any{"uuid": uuid, "name": name, "base_damage": baseDamage, "cause": cause}
+	if damagerUUID != "" {
+		payload["damager_uuid"] = damagerUUID
+		payload["damager_name"] = damagerName
+	}
+	actions, err := c.call(ctx, "entity_damage", payload, &out)
+	return out, actions, err
+}
+
+func (c *Client) PlayerDeath(ctx context.Context, uuid, name string, xp int, message string) (PlayerDeathResult, []Action, error) {
+	var out PlayerDeathResult
+	payload := map[string]any{"uuid": uuid, "name": name, "xp": xp}
+	if message != "" {
+		payload["message"] = message
+	}
+	actions, err := c.call(ctx, "player_death", payload, &out)
+	return out, actions, err
+}
+
+func (c *Client) PlayerRespawn(ctx context.Context, uuid, name string, position *Position) (PlayerRespawnResult, []Action, error) {
+	var out PlayerRespawnResult
+	payload := map[string]any{"uuid": uuid, "name": name}
+	if position != nil {
+		payload["position"] = position
+	}
+	actions, err := c.call(ctx, "player_respawn", payload, &out)
 	return out, actions, err
 }
 

@@ -78,27 +78,27 @@ try {
     $enable = request($pipes, ['id' => 2, 'type' => 'enable']);
     assert($enable['ok'] === true);
 
-    $join = request($pipes, ['id' => 3, 'type' => 'player_join', 'payload' => ['uuid' => 'u1', 'name' => 'Steve']]);
+    $join = request($pipes, ['id' => 3, 'type' => 'player_join', 'payload' => ['uuid' => '00000000-0000-4000-8000-000000000101', 'name' => 'Steve']]);
     assert($join['ok'] === true);
-    assert($join['actions'][0] === ['type' => 'player.send_message', 'uuid' => 'u1', 'message' => 'welcome Steve']);
+    assert($join['actions'][0] === ['type' => 'player.send_message', 'uuid' => '00000000-0000-4000-8000-000000000101', 'message' => 'welcome Steve']);
     assert($join['actions'][1]['type'] === 'player.send_form');
-    assert($join['actions'][1]['uuid'] === 'u1');
+    assert($join['actions'][1]['uuid'] === '00000000-0000-4000-8000-000000000101');
     assert($join['actions'][1]['form_id'] === 1);
     assert($join['actions'][1]['form']['type'] === 'form');
 
-    $form = request($pipes, ['id' => 4, 'type' => 'form_response', 'payload' => ['uuid' => 'u1', 'form_id' => 1, 'data' => 0]]);
+    $form = request($pipes, ['id' => 4, 'type' => 'form_response', 'payload' => ['uuid' => '00000000-0000-4000-8000-000000000101', 'form_id' => 1, 'data' => 0]]);
     assert($form['ok'] === true);
     assert($form['result']['handled'] === true);
-    assert($form['actions'][0] === ['type' => 'player.send_message', 'uuid' => 'u1', 'message' => 'form response 0']);
+    assert($form['actions'][0] === ['type' => 'player.send_message', 'uuid' => '00000000-0000-4000-8000-000000000101', 'message' => 'form response 0']);
 
-    $chat = request($pipes, ['id' => 5, 'type' => 'chat', 'payload' => ['uuid' => 'u1', 'name' => 'Steve', 'message' => 'hello']]);
+    $chat = request($pipes, ['id' => 5, 'type' => 'chat', 'payload' => ['uuid' => '00000000-0000-4000-8000-000000000101', 'name' => 'Steve', 'message' => 'hello']]);
     assert($chat['ok'] === true);
     assert($chat['result']['message'] === 'HELLO');
 
-    $command = request($pipes, ['id' => 6, 'type' => 'command', 'payload' => ['uuid' => 'u1', 'name' => 'Steve', 'command' => 'echo', 'args' => ['from', 'ipc']]]);
+    $command = request($pipes, ['id' => 6, 'type' => 'command', 'payload' => ['uuid' => '00000000-0000-4000-8000-000000000101', 'name' => 'Steve', 'command' => 'echo', 'args' => ['from', 'ipc']]]);
     assert($command['ok'] === true);
     assert($command['result']['handled'] === true);
-    assert($command['actions'][0] === ['type' => 'player.send_message', 'uuid' => 'u1', 'message' => 'echo from ipc']);
+    assert($command['actions'][0] === ['type' => 'player.send_message', 'uuid' => '00000000-0000-4000-8000-000000000101', 'message' => 'echo from ipc']);
 
     $disable = request($pipes, ['id' => 7, 'type' => 'disable']);
     assert($disable['ok'] === true);

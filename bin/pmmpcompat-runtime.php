@@ -7,7 +7,10 @@ require dirname(__DIR__) . '/autoload.php';
 
 use pocketmine\compat\HostActionQueue;
 use pocketmine\compat\Runtime;
+use pocketmine\block\Block;
+use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\item\Item;
+use pocketmine\lang\Translatable;
 use pocketmine\math\Vector3;
 use pocketmine\player\GameMode;
 use pocketmine\Server;
@@ -62,8 +65,12 @@ function handleRequest(Runtime $runtime, HostActionQueue $queue, array $request)
         'chat' => chat($runtime, $payload),
         'command' => command($runtime, $payload),
         'player_move' => playerMove($runtime, $payload),
+        'entity_damage' => entityDamage($runtime, $payload),
+        'player_death' => playerDeath($runtime, $payload),
+        'player_respawn' => playerRespawn($runtime, $payload),
         'block_break' => blockBreak($runtime, $payload),
         'block_place' => blockPlace($runtime, $payload),
+        'player_interact' => playerInteract($runtime, $payload),
         'player_inventory' => playerInventory($runtime, $payload),
         'player_state' => playerState($runtime, $payload),
         'form_response' => formResponse($runtime, $payload),
@@ -96,7 +103,12 @@ function playerQuit(Runtime $runtime, array $payload): array
 function chat(Runtime $runtime, array $payload): array
 {
     $event = $runtime->chat(stringValue($payload, 'uuid'), stringValue($payload, 'name'), stringValue($payload, 'message'));
-    return ['cancelled' => $event->isCancelled(), 'message' => $event->getMessage()];
+    return [
+        'cancelled' => $event->isCancelled(),
+        'message' => $event->getMessage(),
+        'formatted_message' => messageText($event->getFormatter()->format($event->getPlayer()->getDisplayName(), $event->getMessage())),
+        'recipient_count' => count($event->getRecipients()),
+    ];
 }
 
 /** @return array<string, mixed> */
@@ -117,17 +129,83 @@ function playerMove(Runtime $runtime, array $payload): array
 }
 
 /** @return array<string, mixed> */
+function entityDamage(Runtime $runtime, array $payload): array
+{
+    $event = $runtime->entityDamage(
+        stringValue($payload, 'uuid'),
+        stringValue($payload, 'name'),
+        floatValue($payload, 'base_damage'),
+        isset($payload['cause']) && is_numeric($payload['cause']) ? (int) $payload['cause'] : EntityDamageEvent::CAUSE_CUSTOM,
+        isset($payload['damager_uuid']) && is_scalar($payload['damager_uuid']) ? (string) $payload['damager_uuid'] : null,
+        isset($payload['damager_name']) && is_scalar($payload['damager_name']) ? (string) $payload['damager_name'] : null,
+    );
+    $result = [
+        'cancelled' => $event->isCancelled(),
+        'base_damage' => $event->getBaseDamage(),
+        'final_damage' => $event->getFinalDamage(),
+        'cause' => $event->getCause(),
+    ];
+    if ($event instanceof \pocketmine\event\entity\EntityDamageByEntityEvent) {
+        $damager = $event->getDamager();
+        $result['damager'] = $damager instanceof \pocketmine\player\Player ? playerPayload($damager->getUniqueId()->toString(), $damager->getName()) : null;
+    }
+    return $result;
+}
+
+/** @return array<string, mixed> */
+function playerDeath(Runtime $runtime, array $payload): array
+{
+    $event = $runtime->playerDeath(stringValue($payload, 'uuid'), stringValue($payload, 'name'), [], intValueDefault($payload, 'xp', 0), isset($payload['message']) && is_scalar($payload['message']) ? (string) $payload['message'] : null);
+    return [
+        'death_message' => messageText($event->getDeathMessage()),
+        'death_screen_message' => messageText($event->getDeathScreenMessage()),
+        'keep_inventory' => $event->getKeepInventory(),
+        'keep_xp' => $event->getKeepXp(),
+        'xp' => $event->getXpDropAmount(),
+    ];
+}
+
+/** @return array<string, mixed> */
+function playerRespawn(Runtime $runtime, array $payload): array
+{
+    $position = isset($payload['position']) && is_array($payload['position']) ? positionValue($payload, 'position') : null;
+    $event = $runtime->playerRespawn(stringValue($payload, 'uuid'), stringValue($payload, 'name'), $position);
+    return ['position' => positionPayload($event->getRespawnPosition())];
+}
+
+/** @return array<string, mixed> */
 function blockBreak(Runtime $runtime, array $payload): array
 {
-    $event = $runtime->blockBreak(stringValue($payload, 'uuid'), stringValue($payload, 'name'), vectorValue($payload, 'position'));
-    return ['cancelled' => $event->isCancelled(), 'position' => vectorPayload($event->getBlockPosition())];
+    $event = $runtime->blockBreak(stringValue($payload, 'uuid'), stringValue($payload, 'name'), vectorValue($payload, 'position'), optionalBlock($payload), optionalItem($payload));
+    return ['cancelled' => $event->isCancelled(), 'position' => vectorPayload($event->getBlockPosition()), 'block' => blockPayload($event->getBlock())];
 }
 
 /** @return array<string, mixed> */
 function blockPlace(Runtime $runtime, array $payload): array
 {
-    $event = $runtime->blockPlace(stringValue($payload, 'uuid'), stringValue($payload, 'name'), vectorValue($payload, 'position'));
-    return ['cancelled' => $event->isCancelled(), 'position' => vectorPayload($event->getBlockPosition())];
+    $event = $runtime->blockPlace(stringValue($payload, 'uuid'), stringValue($payload, 'name'), vectorValue($payload, 'position'), optionalBlock($payload), optionalItem($payload));
+    return ['cancelled' => $event->isCancelled(), 'position' => vectorPayload($event->getBlockPosition()), 'blocks' => transactionPayload($event->getTransaction())];
+}
+
+/** @return array<string, mixed> */
+function playerInteract(Runtime $runtime, array $payload): array
+{
+    $event = $runtime->playerInteract(
+        stringValue($payload, 'uuid'),
+        stringValue($payload, 'name'),
+        vectorValue($payload, 'position'),
+        isset($payload['action']) && is_numeric($payload['action']) ? (int) $payload['action'] : \pocketmine\event\player\PlayerInteractEvent::RIGHT_CLICK_BLOCK,
+        optionalBlock($payload),
+        optionalItem($payload),
+        isset($payload['touch_vector']) && is_array($payload['touch_vector']) ? vectorValue($payload, 'touch_vector') : null,
+        isset($payload['face']) && is_numeric($payload['face']) ? (int) $payload['face'] : null,
+    );
+    return [
+        'cancelled' => $event->isCancelled(),
+        'position' => $event->getBlock() !== null ? vectorPayload($event->getBlock()->getPosition() ?? vectorValue($payload, 'position')) : vectorPayload(vectorValue($payload, 'position')),
+        'use_item' => $event->useItem(),
+        'use_block' => $event->useBlock(),
+    ];
 }
 
 /** @return array<string, mixed> */
@@ -167,14 +245,28 @@ function itemValue(array $item): Item
     return new Item($typeId, $name, $count);
 }
 
+function optionalItem(array $payload): ?Item
+{
+    return isset($payload['item']) && is_array($payload['item']) ? itemValue($payload['item']) : null;
+}
+
+function optionalBlock(array $payload): ?Block
+{
+    if (!isset($payload['block']) || !is_array($payload['block'])) {
+        return null;
+    }
+    $block = $payload['block'];
+    $typeId = isset($block['type_id']) && is_scalar($block['type_id']) ? (string) $block['type_id'] : 'minecraft:air';
+    $name = isset($block['name']) && is_scalar($block['name']) ? (string) $block['name'] : $typeId;
+    return new Block($typeId, $name);
+}
+
 /** @return array<string, mixed> */
 function playerState(Runtime $runtime, array $payload): array
 {
     $state = [];
     if (isset($payload['position']) && is_array($payload['position'])) {
-        $position = $payload['position'];
-        $world = isset($position['world']) && is_scalar($position['world']) ? (string) $position['world'] : 'world';
-        $state['position'] = new Position((float) ($position['x'] ?? 0), (float) ($position['y'] ?? 0), (float) ($position['z'] ?? 0), new World($world));
+        $state['position'] = positionValue($payload, 'position');
     }
     if (isset($payload['health']) && is_numeric($payload['health'])) {
         $state['health'] = (float) $payload['health'];
@@ -234,6 +326,19 @@ function intValue(array $payload, string $key): int
     return (int) $payload[$key];
 }
 
+function intValueDefault(array $payload, string $key, int $default): int
+{
+    return isset($payload[$key]) && is_numeric($payload[$key]) ? (int) $payload[$key] : $default;
+}
+
+function floatValue(array $payload, string $key): float
+{
+    if (!isset($payload[$key]) || !is_numeric($payload[$key])) {
+        throw new InvalidArgumentException("Missing float payload field: {$key}");
+    }
+    return (float) $payload[$key];
+}
+
 function vectorValue(array $payload, string $key): Vector3
 {
     $value = $payload[$key] ?? null;
@@ -243,8 +348,48 @@ function vectorValue(array $payload, string $key): Vector3
     return new Vector3((float) ($value['x'] ?? 0), (float) ($value['y'] ?? 0), (float) ($value['z'] ?? 0));
 }
 
+function positionValue(array $payload, string $key): Position
+{
+    $value = $payload[$key] ?? null;
+    if (!is_array($value)) {
+        throw new InvalidArgumentException("Missing position payload field: {$key}");
+    }
+    $world = isset($value['world']) && is_scalar($value['world']) ? (string) $value['world'] : 'world';
+    return new Position((float) ($value['x'] ?? 0), (float) ($value['y'] ?? 0), (float) ($value['z'] ?? 0), new World($world));
+}
+
 /** @return array{x: float, y: float, z: float} */
 function vectorPayload(Vector3 $vector): array
 {
     return ['x' => $vector->x, 'y' => $vector->y, 'z' => $vector->z];
+}
+
+/** @return array{x: float, y: float, z: float, world: string} */
+function positionPayload(Position $position): array
+{
+    return ['x' => $position->x, 'y' => $position->y, 'z' => $position->z, 'world' => $position->getWorld()->getFolderName()];
+}
+
+/** @return array<string, mixed> */
+function blockPayload(Block $block): array
+{
+    return ['type_id' => $block->getTypeId(), 'name' => $block->getName(), 'position' => $block->getPosition() !== null ? vectorPayload($block->getPosition()) : null];
+}
+
+function messageText(Translatable|string $message): string
+{
+    return $message instanceof Translatable ? $message->getText() : $message;
+}
+
+/** @return list<array{x: int, y: int, z: int, block: array<string, mixed>}> */
+function transactionPayload(mixed $transaction): array
+{
+    if (!is_object($transaction) || !method_exists($transaction, 'getBlocks')) {
+        return [];
+    }
+    $blocks = [];
+    foreach ($transaction->getBlocks() as [$x, $y, $z, $block]) {
+        $blocks[] = ['x' => $x, 'y' => $y, 'z' => $z, 'block' => $block instanceof Block ? blockPayload($block) : []];
+    }
+    return $blocks;
 }
