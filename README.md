@@ -41,10 +41,13 @@ php tools/smoke.php
 php tools/plugin-corpus-smoke.php
 php tools/ipc-smoke.php
 php tools/bridge-action-audit.php
+php -d phar.readonly=0 tools/plugin-package-corpus.php --self-test
 php -d phar.readonly=0 tools/phar-smoke.php
 ```
 
 The smoke tests create temporary PMMP-style plugin folders and phars, load them via `PluginLoader` and the JSON-lines runtime process, validate dependency order, run lifecycle hooks, copy bundled resources/configs, dispatch command aliases, dispatch listener events, exercise forms/common events including form response callbacks, run scheduler ticks, persist configs and SQLite state, run local async task completion, exercise bundled virion-style classes, and verify bridge actions back to the host.
+
+For outside plugin packages, run `php -d phar.readonly=0 tools/plugin-package-corpus.php <path> [...]` with plugin folders, `.phar` files, or directories containing multiple dropped plugins. The tool copies each corpus into an isolated runtime, then verifies load, enable, ticks, disable, and emitted action collection.
 
 For early experiments without Composer, require the package autoloader:
 
