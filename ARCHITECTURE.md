@@ -127,10 +127,18 @@ This process is intentionally a plain IPC adapter surface. A Go host can keep th
 
 `host/go` contains a small client for native host code. It starts the PHP runtime process, sends JSON-lines requests, decodes responses, and exposes returned host actions as Go structs.
 
+The Go package also provides an action application contract:
+
+- `ApplyActions(ctx, resolver, actions)` applies a batch in order.
+- `TargetResolver` locates host player/server targets by UUID.
+- `PlayerTarget` and `ServerTarget` enumerate every currently emitted bridge action.
+
+Dragonfly/Lunar adapters should implement those interfaces around their native player/server handles. World and player mutations must still be scheduled through Dragonfly's correct goroutine or transaction boundary; `pmmpcompat` only normalizes and dispatches the intent.
+
 This is the intended integration shape for Lunar/Dragonfly work:
 
 1. Dragonfly event handler receives a native event.
 2. Lunar adapter normalizes it into a `pmmpcompat.Client` call such as `Chat()` or `BlockBreak()`.
 3. The PHP runtime dispatches PMMP events/listeners.
 4. The Go client receives action records such as `player.send_message`, `player.teleport`, or `server.broadcast_message`.
-5. Lunar adapter applies those actions to Dragonfly inside the correct server/world context.
+5. Lunar adapter applies those actions through the typed `PlayerTarget`/`ServerTarget` interfaces inside the correct server/world context.
