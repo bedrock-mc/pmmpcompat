@@ -79,11 +79,26 @@ type LoadResult struct {
 }
 
 type CommandInfo struct {
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Aliases     []string `json:"aliases"`
-	Permission  string   `json:"permission"`
-	Usage       string   `json:"usage"`
+	Name        string                `json:"name"`
+	Description string                `json:"description"`
+	Aliases     []string              `json:"aliases"`
+	Permission  string                `json:"permission"`
+	Usage       string                `json:"usage"`
+	Overloads   []CommandOverloadInfo `json:"overloads"`
+}
+
+type CommandOverloadInfo struct {
+	Parameters []CommandParameterInfo `json:"parameters"`
+}
+
+type CommandParameterInfo struct {
+	Name       string   `json:"name"`
+	Type       int      `json:"type"`
+	TypeName   string   `json:"type_name"`
+	Optional   bool     `json:"optional"`
+	EnumName   string   `json:"enum_name"`
+	EnumValues []string `json:"enum_values"`
+	Subcommand bool     `json:"subcommand"`
 }
 
 type CommandsResult struct {

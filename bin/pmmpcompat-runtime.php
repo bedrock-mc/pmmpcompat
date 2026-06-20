@@ -120,9 +120,132 @@ function commands(Runtime $runtime): array
             'aliases' => $command->getAliases(),
             'permission' => $command->getPermission(),
             'usage' => $command->getUsage(),
+            'overloads' => commandOverloads($command),
         ];
     }
     return ['commands' => $commands];
+}
+
+/** @return array<int, array<string, mixed>> */
+function commandOverloads(object $command): array
+{
+    if (!method_exists($command, 'getSubCommands') && !method_exists($command, 'getArgumentList')) {
+        return [];
+    }
+    return argumentableOverloads($command);
+}
+
+/** @return array<int, array<string, mixed>> */
+function argumentableOverloads(object $argumentable): array
+{
+    $overloads = [];
+    if (method_exists($argumentable, 'getSubCommands')) {
+        foreach ($argumentable->getSubCommands() as $label => $subCommand) {
+            if (!is_object($subCommand) || !method_exists($subCommand, 'getName') || $subCommand->getName() !== $label) {
+                continue;
+            }
+            $subcommandParam = [
+                'name' => (string) $label,
+                'type' => \pocketmine\network\mcpe\protocol\AvailableCommandsPacket::ARG_FLAG_VALID | \pocketmine\network\mcpe\protocol\AvailableCommandsPacket::ARG_FLAG_ENUM,
+                'type_name' => 'subcommand',
+                'optional' => false,
+                'enum_name' => (string) $label,
+                'enum_values' => [(string) $label],
+                'subcommand' => true,
+            ];
+            $childOverloads = argumentableOverloads($subCommand);
+            if ($childOverloads === []) {
+                $overloads[] = ['parameters' => [$subcommandParam]];
+                continue;
+            }
+            foreach ($childOverloads as $childOverload) {
+                $parameters = $childOverload['parameters'] ?? [];
+                array_unshift($parameters, $subcommandParam);
+                $overloads[] = ['parameters' => $parameters];
+            }
+        }
+    }
+    foreach (argumentOverloadCombinations($argumentable) as $parameters) {
+        $overloads[] = ['parameters' => $parameters];
+    }
+    return $overloads;
+}
+
+/** @return array<int, array<int, array<string, mixed>>> */
+function argumentOverloadCombinations(object $argumentable): array
+{
+    if (!method_exists($argumentable, 'getArgumentList')) {
+        return [];
+    }
+    $input = $argumentable->getArgumentList();
+    if (!is_array($input) || $input === []) {
+        return [];
+    }
+    $positions = [];
+    foreach ($input as $positionArguments) {
+        if (!is_array($positionArguments) || $positionArguments === []) {
+            continue;
+        }
+        $choices = [];
+        foreach ($positionArguments as $argument) {
+            if (is_object($argument)) {
+                $choices[] = commandParameterPayload($argument);
+            }
+        }
+        if ($choices !== []) {
+            $positions[] = $choices;
+        }
+    }
+    if ($positions === []) {
+        return [];
+    }
+    $combinations = [[]];
+    foreach ($positions as $choices) {
+        $next = [];
+        foreach ($combinations as $prefix) {
+            foreach ($choices as $choice) {
+                $next[] = [...$prefix, $choice];
+            }
+        }
+        $combinations = $next;
+    }
+    return $combinations;
+}
+
+/** @return array<string, mixed> */
+function commandParameterPayload(object $argument): array
+{
+    $name = method_exists($argument, 'getName') ? (string) $argument->getName() : 'value';
+    $typeName = method_exists($argument, 'getTypeName') ? (string) $argument->getTypeName() : '';
+    $optional = method_exists($argument, 'isOptional') && (bool) $argument->isOptional();
+    $type = 0;
+    $enumName = '';
+    $enumValues = [];
+    if (method_exists($argument, 'getNetworkParameterData')) {
+        $parameter = $argument->getNetworkParameterData();
+        if (is_object($parameter)) {
+            $name = isset($parameter->paramName) ? (string) $parameter->paramName : $name;
+            $type = isset($parameter->paramType) ? (int) $parameter->paramType : $type;
+            $optional = isset($parameter->isOptional) ? (bool) $parameter->isOptional : $optional;
+            $enum = $parameter->enum ?? null;
+            if (is_object($enum)) {
+                $enumName = isset($enum->enumName) ? (string) $enum->enumName : '';
+                $values = $enum->values ?? [];
+                if (is_array($values)) {
+                    $enumValues = array_values(array_map('strval', $values));
+                }
+            }
+        }
+    }
+    return [
+        'name' => $name,
+        'type' => $type,
+        'type_name' => $typeName,
+        'optional' => $optional,
+        'enum_name' => $enumName,
+        'enum_values' => $enumValues,
+        'subcommand' => false,
+    ];
 }
 
 /** @return array<string, mixed> */

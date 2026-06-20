@@ -59,7 +59,7 @@ func TestClientDrivesPMMPRuntimeProcess(t *testing.T) {
 	if len(actions) != 0 {
 		t.Fatalf("commands actions = %#v", actions)
 	}
-	if len(commands.Commands) != 5 || commands.Commands[0].Name != "echo" {
+	if len(commands.Commands) != 6 || commands.Commands[0].Name != "echo" {
 		t.Fatalf("commands result = %#v", commands)
 	}
 	if commands.Commands[0].Usage != "/echo <message...>" {
@@ -67,6 +67,13 @@ func TestClientDrivesPMMPRuntimeProcess(t *testing.T) {
 	}
 	if commands.Commands[4].Name != "dynusage" || commands.Commands[4].Usage != "/dynusage <value:string>" {
 		t.Fatalf("dynamic usage command = %#v", commands.Commands[4])
+	}
+	if commands.Commands[5].Name != "tree" || len(commands.Commands[5].Overloads) != 1 {
+		t.Fatalf("structured command = %#v", commands.Commands[5])
+	}
+	treeParams := commands.Commands[5].Overloads[0].Parameters
+	if len(treeParams) != 2 || !treeParams[0].Subcommand || treeParams[0].Name != "make" || treeParams[1].Name != "name" || treeParams[1].TypeName != "string" {
+		t.Fatalf("structured command params = %#v", treeParams)
 	}
 
 	join, actions, err := client.PlayerJoin(ctx, "00000000-0000-4000-8000-000000000401", "Steve")
@@ -370,6 +377,8 @@ use pocketmine\event\server\CommandEvent;
 use pocketmine\form\SimpleForm;
 use pocketmine\player\GameMode;
 use pocketmine\item\VanillaItems;
+use pocketmine\network\mcpe\protocol\AvailableCommandsPacket;
+use pocketmine\network\mcpe\protocol\types\command\CommandParameter;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\world\Position;
@@ -386,6 +395,49 @@ class EchoPlugin extends PluginBase implements Listener {
 
             public function execute(CommandSender $sender, string $label, array $args): bool {
                 $sender->sendMessage('dynusage ' . implode(' ', $args));
+                return true;
+            }
+        });
+        $this->getServer()->getCommandMap()->register('fixture', new class('tree') extends Command {
+            private Command $make;
+
+            public function __construct(string $name) {
+                parent::__construct($name);
+                $this->make = new class('make') extends Command {
+                    public function getSubCommands(): array {
+                        return [];
+                    }
+
+                    public function getArgumentList(): array {
+                        return [[new class {
+                            public function getName(): string { return 'name'; }
+                            public function getTypeName(): string { return 'string'; }
+                            public function isOptional(): bool { return false; }
+                            public function getNetworkParameterData(): CommandParameter {
+                                $parameter = new CommandParameter();
+                                $parameter->paramName = 'name';
+                                $parameter->paramType = AvailableCommandsPacket::ARG_FLAG_VALID | AvailableCommandsPacket::ARG_TYPE_STRING;
+                                $parameter->isOptional = false;
+                                return $parameter;
+                            }
+                        }]];
+                    }
+
+                    public function execute(CommandSender $sender, string $label, array $args): bool {
+                        return true;
+                    }
+                };
+            }
+
+            public function getSubCommands(): array {
+                return ['make' => $this->make];
+            }
+
+            public function getArgumentList(): array {
+                return [];
+            }
+
+            public function execute(CommandSender $sender, string $label, array $args): bool {
                 return true;
             }
         });
