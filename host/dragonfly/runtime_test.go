@@ -54,7 +54,7 @@ func TestHandleChatAppliesNonEmptyPMMPMessage(t *testing.T) {
 	}
 }
 
-func TestHandleCommandExecutionForwardsOwnedPMMPCommand(t *testing.T) {
+func TestHandleCommandExecutionLetsOwnedPMMPCommandRunnableDispatch(t *testing.T) {
 	client := &commandCaptureClient{}
 	rt := NewRuntime(client, nil, RuntimeOptions{})
 	rt.registerCommandLabels("f", nil)
@@ -62,8 +62,23 @@ func TestHandleCommandExecutionForwardsOwnedPMMPCommand(t *testing.T) {
 
 	h.HandleCommandExecution(nil, cmd.New("f", "Faction command", nil, pmmpCommand{runtime: rt, label: "f"}), []string{"create", "Test"})
 
-	if client.command != "f" {
-		t.Fatalf("command = %q, want f", client.command)
+	if client.command != "" {
+		t.Fatalf("command = %q, want no pre-dispatch", client.command)
+	}
+	if len(client.args) != 0 {
+		t.Fatalf("args = %#v, want no pre-dispatch", client.args)
+	}
+}
+
+func TestHandleCommandExecutionForwardsNonOwnedCommand(t *testing.T) {
+	client := &commandCaptureClient{}
+	rt := NewRuntime(client, nil, RuntimeOptions{})
+	h := &Handler{runtime: rt, uuid: "00000000-0000-4000-8000-000000000001", name: "Steve"}
+
+	h.HandleCommandExecution(nil, cmd.New("dragonfly-test", "Dragonfly command", nil, pmmpCommand{runtime: rt, label: "dragonfly-test"}), []string{"create", "Test"})
+
+	if client.command != "dragonfly-test" {
+		t.Fatalf("command = %q, want dragonfly-test", client.command)
 	}
 	if !reflect.DeepEqual(client.args, []string{"create", "Test"}) {
 		t.Fatalf("args = %#v, want create/Test", client.args)

@@ -333,6 +333,9 @@ func (h *Handler) HandleChat(ctx *player.Context, message *string) {
 }
 
 func (h *Handler) HandleCommandExecution(ctx *player.Context, command cmd.Command, args []string) {
+	if h.runtime.ownsCommand(command.Name()) {
+		return
+	}
 	callCtx, cancel := h.runtime.context()
 	defer cancel()
 	result, actions, err := h.runtime.client.Command(callCtx, h.uuid, h.name, command.Name(), args)
