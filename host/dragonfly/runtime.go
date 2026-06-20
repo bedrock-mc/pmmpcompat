@@ -245,7 +245,7 @@ type pmmpCommand struct {
 	Args    cmd.Varargs `cmd:"args"`
 }
 
-func (c pmmpCommand) Run(src cmd.Source, o *cmd.Output, _ *world.Tx) {
+func (c pmmpCommand) Run(src cmd.Source, o *cmd.Output, _ *world.Context) {
 	p, ok := src.(*player.Player)
 	if !ok {
 		o.Errorf("PocketMine commands can only be run by players.")

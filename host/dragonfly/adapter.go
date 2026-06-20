@@ -22,9 +22,8 @@ import (
 )
 
 var (
-	ErrMissingMapper     = errors.New("pmmpcompat dragonfly adapter missing mapper")
-	ErrPlayerUnavailable = errors.New("pmmpcompat dragonfly adapter player unavailable")
-	ErrUnknownMode       = errors.New("pmmpcompat dragonfly adapter unknown gamemode")
+	ErrMissingMapper = errors.New("pmmpcompat dragonfly adapter missing mapper")
+	ErrUnknownMode   = errors.New("pmmpcompat dragonfly adapter unknown gamemode")
 )
 
 type ItemMapper func(pmmpcompat.InventoryItem) (dfitem.Stack, error)
@@ -90,43 +89,43 @@ type PlayerTarget struct {
 }
 
 func (t PlayerTarget) SendMessage(ctx context.Context, message string) error {
-	return t.withLiveTransaction(ctx, func() error {
-		t.player.Message(pmmpText(message))
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		p.Message(pmmpText(message))
 		return nil
 	})
 }
 
 func (t PlayerTarget) SendPopup(ctx context.Context, message string) error {
-	return t.withLiveTransaction(ctx, func() error {
-		t.player.SendPopup(pmmpText(message))
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		p.SendPopup(pmmpText(message))
 		return nil
 	})
 }
 
 func (t PlayerTarget) SendTip(ctx context.Context, message string) error {
-	return t.withLiveTransaction(ctx, func() error {
-		t.player.SendTip(pmmpText(message))
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		p.SendTip(pmmpText(message))
 		return nil
 	})
 }
 
 func (t PlayerTarget) SendActionBar(ctx context.Context, message string) error {
-	return t.withLiveTransaction(ctx, func() error {
-		t.player.SendTitle(title.New().WithActionText(pmmpText(message)))
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		p.SendTitle(title.New().WithActionText(pmmpText(message)))
 		return nil
 	})
 }
 
 func (t PlayerTarget) SendTitle(ctx context.Context, text, subtitle string) error {
-	return t.withLiveTransaction(ctx, func() error {
-		t.player.SendTitle(title.New(pmmpText(text)).WithSubtitle(pmmpText(subtitle)))
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		p.SendTitle(title.New(pmmpText(text)).WithSubtitle(pmmpText(subtitle)))
 		return nil
 	})
 }
 
 func (t PlayerTarget) SetTitleDuration(ctx context.Context, fadeIn, stay, fadeOut int) error {
-	return t.withLiveTransaction(ctx, func() error {
-		t.player.SendTitle(title.New().
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		p.SendTitle(title.New().
 			WithFadeInDuration(ticks(fadeIn)).
 			WithDuration(ticks(stay)).
 			WithFadeOutDuration(ticks(fadeOut)))
@@ -135,29 +134,29 @@ func (t PlayerTarget) SetTitleDuration(ctx context.Context, fadeIn, stay, fadeOu
 }
 
 func (t PlayerTarget) ResetTitles(ctx context.Context) error {
-	return t.withLiveTransaction(ctx, func() error {
-		t.player.SendTitle(title.New().WithFadeInDuration(0).WithDuration(0).WithFadeOutDuration(0))
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		p.SendTitle(title.New().WithFadeInDuration(0).WithDuration(0).WithFadeOutDuration(0))
 		return nil
 	})
 }
 
 func (t PlayerTarget) RemoveTitles(ctx context.Context) error {
-	return t.withLiveTransaction(ctx, func() error {
-		t.player.SendTitle(title.New())
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		p.SendTitle(title.New())
 		return nil
 	})
 }
 
 func (t PlayerTarget) Teleport(ctx context.Context, position pmmpcompat.Position) error {
-	return t.withLiveTransaction(ctx, func() error {
-		t.player.Teleport(mgl64.Vec3{position.X, position.Y, position.Z})
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		p.Teleport(mgl64.Vec3{position.X, position.Y, position.Z})
 		return nil
 	})
 }
 
 func (t PlayerTarget) Kick(ctx context.Context, reason string) error {
-	return t.withLiveTransaction(ctx, func() error {
-		t.player.Disconnect(pmmpText(reason))
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		p.Disconnect(pmmpText(reason))
 		return nil
 	})
 }
@@ -166,8 +165,8 @@ func (t PlayerTarget) Transfer(ctx context.Context, address string, port int, _ 
 	if port > 0 && !strings.Contains(address, ":") {
 		address = net.JoinHostPort(address, strconv.Itoa(port))
 	}
-	return t.withLiveTransaction(ctx, func() error {
-		return t.player.Transfer(address)
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		return p.Transfer(address)
 	})
 }
 
@@ -182,8 +181,8 @@ func (t PlayerTarget) SendForm(ctx context.Context, formID int, raw json.RawMess
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	return t.withLiveTransaction(ctx, func() error {
-		t.player.SendForm(f)
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		p.SendForm(f)
 		return nil
 	})
 }
@@ -193,8 +192,8 @@ func (t PlayerTarget) SetGamemode(ctx context.Context, gamemode string) error {
 	if err != nil {
 		return err
 	}
-	return t.withLiveTransaction(ctx, func() error {
-		t.player.SetGameMode(mode)
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		p.SetGameMode(mode)
 		return nil
 	})
 }
@@ -203,15 +202,15 @@ func (t PlayerTarget) SetHealth(ctx context.Context, health, maxHealth float64) 
 	if t.options.HealthSetter == nil {
 		return fmt.Errorf("%w: health setter", ErrMissingMapper)
 	}
-	return t.withLiveTransaction(ctx, func() error {
-		return t.options.HealthSetter(ctx, t.player, health, maxHealth)
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		return t.options.HealthSetter(ctx, p, health, maxHealth)
 	})
 }
 
 func (t PlayerTarget) SetExperience(ctx context.Context, level int, progress float64) error {
-	return t.withLiveTransaction(ctx, func() error {
-		t.player.SetExperienceLevel(level)
-		t.player.SetExperienceProgress(progress)
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		p.SetExperienceLevel(level)
+		p.SetExperienceProgress(progress)
 		return nil
 	})
 }
@@ -220,25 +219,25 @@ func (t PlayerTarget) SetAllowFlight(ctx context.Context, value bool) error {
 	if t.options.AllowFlightSetter == nil {
 		return fmt.Errorf("%w: allow flight setter", ErrMissingMapper)
 	}
-	return t.withLiveTransaction(ctx, func() error {
-		return t.options.AllowFlightSetter(ctx, t.player, value)
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		return t.options.AllowFlightSetter(ctx, p, value)
 	})
 }
 
 func (t PlayerTarget) SetFlying(ctx context.Context, value bool) error {
-	return t.withLiveTransaction(ctx, func() error {
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
 		if value {
-			t.player.StartFlying()
+			p.StartFlying()
 			return nil
 		}
-		t.player.StopFlying()
+		p.StopFlying()
 		return nil
 	})
 }
 
 func (t PlayerTarget) SetFlightSpeed(ctx context.Context, speed float64) error {
-	return t.withLiveTransaction(ctx, func() error {
-		t.player.SetFlightSpeed(speed)
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		p.SetFlightSpeed(speed)
 		return nil
 	})
 }
@@ -247,8 +246,8 @@ func (t PlayerTarget) SetViewDistance(ctx context.Context, distance int) error {
 	if t.options.ViewDistanceSetter == nil {
 		return fmt.Errorf("%w: view distance setter", ErrMissingMapper)
 	}
-	return t.withLiveTransaction(ctx, func() error {
-		return t.options.ViewDistanceSetter(ctx, t.player, distance)
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		return t.options.ViewDistanceSetter(ctx, p, distance)
 	})
 }
 
@@ -263,20 +262,20 @@ func (t PlayerTarget) SetInventoryItem(ctx context.Context, slot int, item pmmpc
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	return t.withLiveTransaction(ctx, func() error {
-		return t.player.Inventory().SetItem(slot, stack)
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		return p.Inventory().SetItem(slot, stack)
 	})
 }
 
 func (t PlayerTarget) ClearInventorySlot(ctx context.Context, slot int) error {
-	return t.withLiveTransaction(ctx, func() error {
-		return t.player.Inventory().SetItem(slot, dfitem.Stack{})
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		return p.Inventory().SetItem(slot, dfitem.Stack{})
 	})
 }
 
 func (t PlayerTarget) ClearInventory(ctx context.Context) error {
-	return t.withLiveTransaction(ctx, func() error {
-		t.player.Inventory().Clear()
+	return t.withLiveTransaction(ctx, func(p *player.Player) error {
+		p.Inventory().Clear()
 		return nil
 	})
 }
@@ -320,25 +319,20 @@ func pmmpText(message string) string {
 	return strings.NewReplacer(`\r\n`, "\n", `\n`, "\n", `\r`, "\n").Replace(message)
 }
 
-func (t PlayerTarget) withLiveTransaction(ctx context.Context, f func() error) error {
+func (t PlayerTarget) withLiveTransaction(ctx context.Context, f func(*player.Player) error) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 	if playerTxLive(t.player) {
-		return f()
+		return f(t.player)
 	}
 
-	var actionErr error
-	ok := t.player.H().ExecWorld(func(*world.Tx, world.Entity) {
-		actionErr = f()
+	t.player.Schedule(func(p *player.Player, _ *world.Context) {
+		if ctx.Err() == nil {
+			_ = f(p)
+		}
 	})
-	if !ok {
-		return fmt.Errorf("%w: %s", ErrPlayerUnavailable, t.player.Name())
-	}
-	if actionErr != nil {
-		return actionErr
-	}
-	return ctx.Err()
+	return nil
 }
 
 func playerTxLive(p *player.Player) (live bool) {
