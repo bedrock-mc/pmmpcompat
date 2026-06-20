@@ -53,6 +53,10 @@ type statefulJoinClient interface {
 	PlayerJoinWithState(ctx context.Context, uuid, name string, state pmmpcompat.PlayerState, slots []pmmpcompat.InventorySlot) (pmmpcompat.PlayerJoinResult, []pmmpcompat.Action, error)
 }
 
+type tickClient interface {
+	Tick(ctx context.Context, tick int) ([]pmmpcompat.Action, error)
+}
+
 type WorldLookup func(name string) (*world.World, bool)
 type ErrorHandler func(error)
 
@@ -100,6 +104,18 @@ func (r *Runtime) RegisterPlayer(ctx context.Context, p *player.Player) (*Handle
 		return nil, err
 	}
 	return h, nil
+}
+
+func (r *Runtime) Tick(ctx context.Context, tick int) error {
+	client, ok := r.client.(tickClient)
+	if !ok {
+		return nil
+	}
+	actions, err := client.Tick(ctx, tick)
+	if err != nil {
+		return err
+	}
+	return r.applyActions(ctx, actions)
 }
 
 func (r *Runtime) RawFormSubmitHandler() RawFormSubmitHandler {

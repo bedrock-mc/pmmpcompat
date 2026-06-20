@@ -118,6 +118,27 @@ p.Handle(h)
 
 The Dragonfly handler forwards movement, chat, PMMP command stubs, block break/place, block interact, damage, death, respawn, quit, form response, inventory sync, and player state sync into the PHP runtime, then applies returned PMMP bridge actions back to Dragonfly. Existing PMMP dependencies, virions, and soft dependencies should still be supplied with the plugin package; this library does not vendor or reimplement plugin-specific dependencies.
 
+## Live Dragonfly Example
+
+`cmd/example` is a runnable Dragonfly server wired to the PMMP compatibility runtime. Drop PMMP plugin folders or `.phar` files into `cmd/example/plugins`, then run:
+
+```bash
+cd cmd/example
+./start.sh
+```
+
+`start.sh` downloads the current PMMP PHP 8.2 binary from [pmmp/PHP-Binaries `pm5-php-8.2-latest`](https://github.com/pmmp/PHP-Binaries/releases/tag/pm5-php-8.2-latest) when `cmd/example/bin/php7/bin/php` is missing. PMMP still extracts the runtime under `bin/php7` even for PHP 8.x builds. The script sets `PMMPCOMPAT_PHP`, `PMMPCOMPAT_PHP_ARGS`, `PMMPCOMPAT_PLUGINS`, and `PMMPCOMPAT_DATA`, then runs the Go example server.
+
+Useful overrides:
+
+```bash
+PMMPCOMPAT_PHP=/path/to/bin/php7/bin/php ./start.sh
+PMMPCOMPAT_PLUGINS=/path/to/plugins ./start.sh -addr :19133
+PMMPCOMPAT_ONLINE_AUTH=true ./start.sh
+```
+
+By default the server listens on `:19132` with offline auth enabled for local testing. It loads/enables PMMP plugins before starting Dragonfly, registers PMMP commands as Dragonfly command stubs, bridges player joins/chat/move/block/interact/damage/death/respawn/form events, and ticks the PMMP scheduler every 50ms.
+
 ## Runtime Direction
 
 The intended production shape is:
