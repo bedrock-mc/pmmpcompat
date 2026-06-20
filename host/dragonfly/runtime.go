@@ -72,15 +72,16 @@ type Runtime struct {
 	server *server.Server
 	opts   RuntimeOptions
 
-	mu      sync.RWMutex
-	players map[string]*player.Player
+	mu       sync.RWMutex
+	players  map[string]*player.Player
+	commands map[string]struct{}
 }
 
 func NewRuntime(client RuntimeClient, srv *server.Server, opts RuntimeOptions) *Runtime {
 	if opts.Timeout <= 0 {
 		opts.Timeout = 5 * time.Second
 	}
-	return &Runtime{client: client, server: srv, opts: opts, players: map[string]*player.Player{}}
+	return &Runtime{client: client, server: srv, opts: opts, players: map[string]*player.Player{}, commands: map[string]struct{}{}}
 }
 
 func (r *Runtime) RegisterPlayer(ctx context.Context, p *player.Player) (*Handler, error) {
@@ -170,8 +171,25 @@ func (r *Runtime) RegisterCommands(ctx context.Context) error {
 			description = "PocketMine plugin command"
 		}
 		cmd.Register(cmd.New(name, description, aliases, pmmpCommand{runtime: r, label: name}))
+		r.registerCommandLabels(name, aliases)
 	}
 	return nil
+}
+
+func (r *Runtime) registerCommandLabels(name string, aliases []string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.commands[strings.ToLower(strings.TrimSpace(name))] = struct{}{}
+	for _, alias := range aliases {
+		r.commands[strings.ToLower(strings.TrimSpace(alias))] = struct{}{}
+	}
+}
+
+func (r *Runtime) ownsCommand(name string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	_, ok := r.commands[strings.ToLower(strings.TrimSpace(name))]
+	return ok
 }
 
 func (r *Runtime) setPlayer(p *player.Player) {
@@ -283,6 +301,9 @@ func (h *Handler) HandleChat(ctx *player.Context, message *string) {
 }
 
 func (h *Handler) HandleCommandExecution(ctx *player.Context, command cmd.Command, args []string) {
+	if h.runtime.ownsCommand(command.Name()) {
+		return
+	}
 	callCtx, cancel := h.runtime.context()
 	defer cancel()
 	result, actions, err := h.runtime.client.Command(callCtx, h.uuid, h.name, command.Name(), args)
