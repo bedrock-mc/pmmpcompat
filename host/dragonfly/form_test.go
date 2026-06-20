@@ -56,6 +56,31 @@ func TestRawFormCloseSubmitsNull(t *testing.T) {
 	}
 }
 
+func TestRawFormNormalizesNullableCustomDefaults(t *testing.T) {
+	f, err := NewRawForm(5, json.RawMessage(`{"type":"custom_form","title":"/f create","content":[{"type":"input","text":"Name","placeholder":"","default":null}]}`), nil)
+	if err != nil {
+		t.Fatalf("NewRawForm: %v", err)
+	}
+	raw, err := f.MarshalJSON()
+	if err != nil {
+		t.Fatalf("MarshalJSON: %v", err)
+	}
+	var payload struct {
+		Content []struct {
+			Default any `json:"default"`
+		} `json:"content"`
+	}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		t.Fatalf("decode form: %v", err)
+	}
+	if len(payload.Content) != 1 {
+		t.Fatalf("content length = %d", len(payload.Content))
+	}
+	if payload.Content[0].Default != "" {
+		t.Fatalf("default = %#v, want empty string", payload.Content[0].Default)
+	}
+}
+
 func TestRawFormRejectsInvalidPayload(t *testing.T) {
 	tests := []json.RawMessage{
 		json.RawMessage(``),

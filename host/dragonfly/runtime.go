@@ -131,7 +131,7 @@ func (r *Runtime) RawFormSubmitHandler() RawFormSubmitHandler {
 		if err != nil {
 			return err
 		}
-		return r.applyActions(ctx, actions)
+		return r.applyActionsForPlayer(ctx, p.UUID().String(), p, actions)
 	}
 }
 
@@ -214,8 +214,29 @@ func (r *Runtime) resolver() *Resolver {
 	return NewResolver(r.server, r.players, options)
 }
 
+func (r *Runtime) resolverForPlayer(uuid string, p *player.Player) *Resolver {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	options := r.opts.Options
+	if options.FormMapper == nil {
+		options.FormMapper = r.FormMapper()
+	}
+	players := make(map[string]*player.Player, len(r.players)+1)
+	for id, player := range r.players {
+		players[id] = player
+	}
+	if uuid != "" && p != nil {
+		players[uuid] = p
+	}
+	return NewResolver(r.server, players, options)
+}
+
 func (r *Runtime) applyActions(ctx context.Context, actions []pmmpcompat.Action) error {
 	return pmmpcompat.ApplyActions(ctx, r.resolver(), actions)
+}
+
+func (r *Runtime) applyActionsForPlayer(ctx context.Context, uuid string, p *player.Player, actions []pmmpcompat.Action) error {
+	return pmmpcompat.ApplyActions(ctx, r.resolverForPlayer(uuid, p), actions)
 }
 
 func (r *Runtime) context() (context.Context, context.CancelFunc) {
@@ -260,7 +281,7 @@ func (c pmmpCommand) Run(src cmd.Source, o *cmd.Output, _ *world.Context) {
 		c.runtime.report(err)
 		return
 	}
-	if err := c.runtime.applyActions(callCtx, actions); err != nil {
+	if err := c.runtime.applyActionsForPlayer(callCtx, p.UUID().String(), p, actions); err != nil {
 		o.Errorf("PocketMine command actions failed: %v", err)
 		c.runtime.report(err)
 	}
@@ -278,7 +299,7 @@ func (h *Handler) HandleMove(ctx *player.Context, newPos mgl64.Vec3, _ cube.Rota
 		h.runtime.report(err)
 		return
 	}
-	if err := h.runtime.applyActions(callCtx, actions); err != nil {
+	if err := h.runtime.applyActionsForPlayer(callCtx, h.uuid, ctx.Val(), actions); err != nil {
 		h.runtime.report(err)
 	}
 	if result.Cancelled {
@@ -295,7 +316,11 @@ func (h *Handler) HandleChat(ctx *player.Context, message *string) {
 		ctx.Cancel()
 		return
 	}
-	if err := h.runtime.applyActions(callCtx, actions); err != nil {
+	var p *player.Player
+	if ctx != nil {
+		p = ctx.Val()
+	}
+	if err := h.runtime.applyActionsForPlayer(callCtx, h.uuid, p, actions); err != nil {
 		h.runtime.report(err)
 	}
 	if result.Cancelled {
@@ -318,7 +343,11 @@ func (h *Handler) HandleCommandExecution(ctx *player.Context, command cmd.Comman
 		}
 		return
 	}
-	if err := h.runtime.applyActions(callCtx, actions); err != nil {
+	var p *player.Player
+	if ctx != nil {
+		p = ctx.Val()
+	}
+	if err := h.runtime.applyActionsForPlayer(callCtx, h.uuid, p, actions); err != nil {
 		h.runtime.report(err)
 	}
 	if ctx != nil && (result.Handled || h.runtime.ownsCommand(command.Name())) {
@@ -336,7 +365,7 @@ func (h *Handler) HandleBlockBreak(ctx *player.Context, pos cube.Pos, _ *[]dfite
 		ctx.Cancel()
 		return
 	}
-	if err := h.runtime.applyActions(callCtx, actions); err != nil {
+	if err := h.runtime.applyActionsForPlayer(callCtx, h.uuid, p, actions); err != nil {
 		h.runtime.report(err)
 	}
 	if result.Cancelled {
@@ -354,7 +383,7 @@ func (h *Handler) HandleBlockPlace(ctx *player.Context, pos cube.Pos, b world.Bl
 		ctx.Cancel()
 		return
 	}
-	if err := h.runtime.applyActions(callCtx, actions); err != nil {
+	if err := h.runtime.applyActionsForPlayer(callCtx, h.uuid, p, actions); err != nil {
 		h.runtime.report(err)
 	}
 	if result.Cancelled {
@@ -372,7 +401,7 @@ func (h *Handler) HandleItemUseOnBlock(ctx *player.Context, pos cube.Pos, _ cube
 		ctx.Cancel()
 		return
 	}
-	if err := h.runtime.applyActions(callCtx, actions); err != nil {
+	if err := h.runtime.applyActionsForPlayer(callCtx, h.uuid, p, actions); err != nil {
 		h.runtime.report(err)
 	}
 	if result.Cancelled || !result.UseBlock || !result.UseItem {
@@ -390,7 +419,7 @@ func (h *Handler) HandleHurt(ctx *player.Context, damage *float64, _ bool, _ *ti
 		ctx.Cancel()
 		return
 	}
-	if err := h.runtime.applyActions(callCtx, actions); err != nil {
+	if err := h.runtime.applyActionsForPlayer(callCtx, h.uuid, ctx.Val(), actions); err != nil {
 		h.runtime.report(err)
 	}
 	if result.Cancelled {
@@ -408,7 +437,7 @@ func (h *Handler) HandleDeath(p *player.Player, _ world.DamageSource, keepInv *b
 		h.runtime.report(err)
 		return
 	}
-	if err := h.runtime.applyActions(callCtx, actions); err != nil {
+	if err := h.runtime.applyActionsForPlayer(callCtx, h.uuid, p, actions); err != nil {
 		h.runtime.report(err)
 	}
 	*keepInv = result.KeepInventory
@@ -423,7 +452,7 @@ func (h *Handler) HandleRespawn(p *player.Player, pos *mgl64.Vec3, w **world.Wor
 		h.runtime.report(err)
 		return
 	}
-	if err := h.runtime.applyActions(callCtx, actions); err != nil {
+	if err := h.runtime.applyActionsForPlayer(callCtx, h.uuid, p, actions); err != nil {
 		h.runtime.report(err)
 	}
 	*pos = mgl64.Vec3{result.Position.X, result.Position.Y, result.Position.Z}
@@ -441,7 +470,7 @@ func (h *Handler) HandleQuit(p *player.Player) {
 	_, actions, err := h.runtime.client.PlayerQuit(callCtx, h.uuid, h.name)
 	if err != nil {
 		h.runtime.report(err)
-	} else if err := h.runtime.applyActions(callCtx, actions); err != nil {
+	} else if err := h.runtime.applyActionsForPlayer(callCtx, h.uuid, p, actions); err != nil {
 		h.runtime.report(err)
 	}
 	h.runtime.deletePlayer(h.uuid)
@@ -454,7 +483,7 @@ func (h *Handler) SyncPlayerState(ctx context.Context, p *player.Player) error {
 	if err != nil {
 		return err
 	}
-	return h.runtime.applyActions(ctx, actions)
+	return h.runtime.applyActionsForPlayer(ctx, h.uuid, p, actions)
 }
 
 func (h *Handler) playerState(p *player.Player) pmmpcompat.PlayerState {
@@ -480,7 +509,7 @@ func (h *Handler) SyncInventory(ctx context.Context, p *player.Player) error {
 	if err != nil {
 		return err
 	}
-	return h.runtime.applyActions(ctx, actions)
+	return h.runtime.applyActionsForPlayer(ctx, h.uuid, p, actions)
 }
 
 func (h *Handler) inventorySlots(p *player.Player) []pmmpcompat.InventorySlot {

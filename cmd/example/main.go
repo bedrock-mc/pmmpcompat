@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -218,8 +219,34 @@ func (c *loggingRuntimeClient) Command(ctx context.Context, uuid, name, command 
 		c.log.Debug("PMMP command failed", "player", name, "uuid", uuid, "command", command, "args", args, "err", err)
 		return result, actions, err
 	}
-	c.log.Debug("PMMP command result", "player", name, "uuid", uuid, "command", command, "args", args, "handled", result.Handled, "actions", len(actions))
+	c.log.Debug("PMMP command result", "player", name, "uuid", uuid, "command", command, "args", args, "handled", result.Handled, "action_count", len(actions), "actions", actionSummaries(actions))
 	return result, actions, nil
+}
+
+func actionSummaries(actions []pmmpcompat.Action) []string {
+	summaries := make([]string, 0, len(actions))
+	for _, action := range actions {
+		summary := action.Type
+		if action.UUID != "" {
+			summary += " uuid=" + action.UUID
+		}
+		if action.Message != "" {
+			summary += fmt.Sprintf(" message=%q", action.Message)
+		}
+		if action.FormID != 0 {
+			summary += fmt.Sprintf(" form_id=%d", action.FormID)
+		}
+		if len(action.Form) > 0 {
+			var payload map[string]any
+			if err := json.Unmarshal(action.Form, &payload); err == nil {
+				if formType, ok := payload["type"].(string); ok && formType != "" {
+					summary += " form_type=" + formType
+				}
+			}
+		}
+		summaries = append(summaries, summary)
+	}
+	return summaries
 }
 
 func logAllowFlight(log *slog.Logger) dfcompat.AllowFlightSetter {

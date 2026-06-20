@@ -73,5 +73,80 @@ func copyJSONObject(payload json.RawMessage) (json.RawMessage, error) {
 	default:
 		return nil, fmt.Errorf("unsupported form type %q", formType)
 	}
+	if formType == "custom_form" && normalizeCustomForm(object) {
+		normalised, err := json.Marshal(object)
+		if err != nil {
+			return nil, err
+		}
+		return normalised, nil
+	}
 	return append(json.RawMessage(nil), payload...), nil
+}
+
+func normalizeCustomForm(object map[string]any) bool {
+	content, ok := object["content"].([]any)
+	if !ok {
+		return false
+	}
+	changed := false
+	for _, raw := range content {
+		element, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		elementType, _ := element["type"].(string)
+		switch elementType {
+		case "label":
+			changed = ensureString(element, "text") || changed
+		case "input":
+			changed = ensureString(element, "text") || changed
+			changed = ensureString(element, "placeholder") || changed
+			changed = ensureString(element, "default") || changed
+		case "toggle":
+			changed = ensureString(element, "text") || changed
+			changed = ensureBool(element, "default") || changed
+		case "slider":
+			changed = ensureString(element, "text") || changed
+			changed = ensureNumber(element, "default", numberValue(element["min"], 0)) || changed
+		case "dropdown", "step_slider":
+			changed = ensureString(element, "text") || changed
+			changed = ensureNumber(element, "default", 0) || changed
+		}
+	}
+	return changed
+}
+
+func ensureString(object map[string]any, key string) bool {
+	if value, ok := object[key]; ok && value != nil {
+		return false
+	}
+	object[key] = ""
+	return true
+}
+
+func ensureBool(object map[string]any, key string) bool {
+	if value, ok := object[key]; ok && value != nil {
+		return false
+	}
+	object[key] = false
+	return true
+}
+
+func ensureNumber(object map[string]any, key string, fallback float64) bool {
+	if value, ok := object[key]; ok && value != nil {
+		return false
+	}
+	object[key] = fallback
+	return true
+}
+
+func numberValue(value any, fallback float64) float64 {
+	switch value := value.(type) {
+	case float64:
+		return value
+	case int:
+		return float64(value)
+	default:
+		return fallback
+	}
 }

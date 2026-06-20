@@ -328,9 +328,7 @@ func (t PlayerTarget) withLiveTransaction(ctx context.Context, f func(*player.Pl
 	}
 
 	t.player.Schedule(func(p *player.Player, _ *world.Context) {
-		if ctx.Err() == nil {
-			_ = f(p)
-		}
+		_ = f(p)
 	})
 	return nil
 }
