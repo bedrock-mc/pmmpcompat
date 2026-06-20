@@ -78,7 +78,7 @@ func (t ServerTarget) BroadcastMessage(ctx context.Context, message string) erro
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		p.Message(message)
+		p.Message(pmmpText(message))
 	}
 	return nil
 }
@@ -89,27 +89,27 @@ type PlayerTarget struct {
 }
 
 func (t PlayerTarget) SendMessage(_ context.Context, message string) error {
-	t.player.Message(message)
+	t.player.Message(pmmpText(message))
 	return nil
 }
 
 func (t PlayerTarget) SendPopup(_ context.Context, message string) error {
-	t.player.SendPopup(message)
+	t.player.SendPopup(pmmpText(message))
 	return nil
 }
 
 func (t PlayerTarget) SendTip(_ context.Context, message string) error {
-	t.player.SendTip(message)
+	t.player.SendTip(pmmpText(message))
 	return nil
 }
 
 func (t PlayerTarget) SendActionBar(_ context.Context, message string) error {
-	t.player.SendTitle(title.New().WithActionText(message))
+	t.player.SendTitle(title.New().WithActionText(pmmpText(message)))
 	return nil
 }
 
 func (t PlayerTarget) SendTitle(_ context.Context, text, subtitle string) error {
-	t.player.SendTitle(title.New(text).WithSubtitle(subtitle))
+	t.player.SendTitle(title.New(pmmpText(text)).WithSubtitle(pmmpText(subtitle)))
 	return nil
 }
 
@@ -137,7 +137,7 @@ func (t PlayerTarget) Teleport(_ context.Context, position pmmpcompat.Position) 
 }
 
 func (t PlayerTarget) Kick(_ context.Context, reason string) error {
-	t.player.Disconnect(reason)
+	t.player.Disconnect(pmmpText(reason))
 	return nil
 }
 
@@ -269,6 +269,10 @@ func ticks(v int) time.Duration {
 		return 0
 	}
 	return time.Duration(v) * 50 * time.Millisecond
+}
+
+func pmmpText(message string) string {
+	return strings.NewReplacer(`\r\n`, "\n", `\n`, "\n", `\r`, "\n").Replace(message)
 }
 
 func gameMode(raw string) (world.GameMode, error) {

@@ -46,3 +46,11 @@ func TestDefaultItemMapper(t *testing.T) {
 		t.Fatalf("zero stack should be empty")
 	}
 }
+
+func TestPMMPTextDecodesEscapedNewlines(t *testing.T) {
+	got := pmmpText(`line one\nline two\r\nline three`)
+	want := "line one\nline two\nline three"
+	if got != want {
+		t.Fatalf("pmmpText = %q, want %q", got, want)
+	}
+}

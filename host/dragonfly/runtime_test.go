@@ -28,6 +28,30 @@ func TestRegisterCommandsMarksPMMPOwnedLabels(t *testing.T) {
 	}
 }
 
+func TestHandleChatKeepsOriginalWhenPMMPReturnsEmptyMessage(t *testing.T) {
+	rt := NewRuntime(chatClient{result: pmmpcompat.ChatResult{Message: ""}}, nil, RuntimeOptions{})
+	h := &Handler{runtime: rt, uuid: "00000000-0000-4000-8000-000000000001", name: "Steve"}
+	message := "hello world"
+
+	h.HandleChat(nil, &message)
+
+	if message != "hello world" {
+		t.Fatalf("message = %q, want original", message)
+	}
+}
+
+func TestHandleChatAppliesNonEmptyPMMPMessage(t *testing.T) {
+	rt := NewRuntime(chatClient{result: pmmpcompat.ChatResult{Message: "HELLO WORLD"}}, nil, RuntimeOptions{})
+	h := &Handler{runtime: rt, uuid: "00000000-0000-4000-8000-000000000001", name: "Steve"}
+	message := "hello world"
+
+	h.HandleChat(nil, &message)
+
+	if message != "HELLO WORLD" {
+		t.Fatalf("message = %q, want rewritten message", message)
+	}
+}
+
 type commandListClient struct {
 	RuntimeClient
 	commands []pmmpcompat.CommandInfo
@@ -35,4 +59,13 @@ type commandListClient struct {
 
 func (c commandListClient) Commands(context.Context) (pmmpcompat.CommandsResult, []pmmpcompat.Action, error) {
 	return pmmpcompat.CommandsResult{Commands: c.commands}, nil, nil
+}
+
+type chatClient struct {
+	RuntimeClient
+	result pmmpcompat.ChatResult
+}
+
+func (c chatClient) Chat(context.Context, string, string, string) (pmmpcompat.ChatResult, []pmmpcompat.Action, error) {
+	return c.result, nil, nil
 }

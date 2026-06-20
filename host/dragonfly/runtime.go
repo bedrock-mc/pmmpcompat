@@ -297,7 +297,9 @@ func (h *Handler) HandleChat(ctx *player.Context, message *string) {
 		ctx.Cancel()
 		return
 	}
-	*message = result.Message
+	if result.Message != "" || *message == "" {
+		*message = result.Message
+	}
 }
 
 func (h *Handler) HandleCommandExecution(ctx *player.Context, command cmd.Command, args []string) {
