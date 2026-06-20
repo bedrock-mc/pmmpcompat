@@ -6,7 +6,7 @@ cd "$DIR"
 
 PHP_TAG="${PMMPCOMPAT_PHP_TAG:-pm5-php-8.2-latest}"
 PHP_RELEASE_URL="https://github.com/pmmp/PHP-Binaries/releases/download/${PHP_TAG}"
-PHP_DIR="${PMMPCOMPAT_PHP_DIR:-$DIR/bin}"
+PHP_DIR="${PMMPCOMPAT_PHP_DIR:-$DIR}"
 PLUGINS_DIR="${PMMPCOMPAT_PLUGINS:-$DIR/plugins}"
 DATA_DIR="${PMMPCOMPAT_DATA:-$DIR/data}"
 
@@ -66,10 +66,12 @@ if [ -z "${PMMPCOMPAT_PHP:-}" ]; then
 fi
 
 if [ -z "${PMMPCOMPAT_PHP_ARGS:-}" ]; then
+	php_args="-d error_reporting=8191"
 	extension_dir="$(find "$PHP_DIR/bin/php7/lib/php/extensions" -type d -name 'no-debug-zts-*' 2>/dev/null | head -n 1 || true)"
 	if [ -n "$extension_dir" ]; then
-		export PMMPCOMPAT_PHP_ARGS="-d extension_dir=$extension_dir"
+		php_args="$php_args -d extension_dir=$extension_dir"
 	fi
+	export PMMPCOMPAT_PHP_ARGS="$php_args"
 fi
 
 mkdir -p "$PLUGINS_DIR" "$DATA_DIR"

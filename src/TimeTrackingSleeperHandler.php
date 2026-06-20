@@ -13,9 +13,9 @@ final class TimeTrackingSleeperHandler extends \pocketmine\snooze\SleeperHandler
         parent::__construct();
     }
 
-    public function addNotifier(\Closure $handler): \pocketmine\snooze\SleeperHandlerEntry
+    public function addNotifier(\Closure|\pocketmine\snooze\SleeperNotifier $handler, ?\Closure $legacyHandler = null): \pocketmine\snooze\SleeperHandlerEntry
     {
-        return parent::addNotifier($handler);
+        return parent::addNotifier($handler, $legacyHandler);
     }
 
     public function getNotificationProcessingTime(): int

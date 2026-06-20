@@ -61,16 +61,20 @@ function runCorpus(string $path): array
     $queue = new HostActionQueue();
     $runtime = new Runtime($root . '/plugins', new Server($queue));
 
-    $runtime->load();
-    $loaded = array_map(static fn($plugin): string => $plugin->getName(), $runtime->plugins());
-    $runtime->enable();
-    $enableActions = $queue->drain();
-    for ($tick = 1; $tick <= 5; $tick++) {
-        $runtime->tick($tick);
+    try {
+        $runtime->load();
+        $loaded = array_map(static fn($plugin): string => $plugin->getName(), $runtime->plugins());
+        $runtime->enable();
+        $enableActions = $queue->drain();
+        for ($tick = 1; $tick <= 5; $tick++) {
+            $runtime->tick($tick);
+        }
+        $tickActions = $queue->drain();
+        $runtime->disable();
+        $disableActions = $queue->drain();
+    } finally {
+        $runtime->shutdown(drainAsyncPool: false);
     }
-    $tickActions = $queue->drain();
-    $runtime->disable();
-    $disableActions = $queue->drain();
 
     $actionTypes = [];
     foreach (array_merge($enableActions, $tickActions, $disableActions) as $action) {

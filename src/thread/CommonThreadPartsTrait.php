@@ -30,6 +30,8 @@ trait CommonThreadPartsTrait
         if ($this->composerAutoloaderPath !== null) {
             require_once $this->composerAutoloaderPath;
         }
+        ThreadSafeClassLoader::loadEnvironmentPaths();
+        ThreadSafeClassLoader::getDefault()->register(false);
         foreach ($this->classLoaders ?? [] as $autoloader) {
             $autoloader->register(false);
         }

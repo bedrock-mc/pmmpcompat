@@ -40,7 +40,15 @@ class ThreadManager
         $erroredThreads = 0;
         foreach ($this->getAll() as $thread) {
             try {
-                $thread->quit();
+                if (method_exists($thread, 'setRunning')) {
+                    $thread->synchronized(function () use ($thread): void {
+                        $thread->setRunning(false);
+                        $thread->notify();
+                    });
+                    $thread->join();
+                } else {
+                    $thread->quit();
+                }
             } catch (ThreadException) {
                 $erroredThreads++;
             }

@@ -26,11 +26,19 @@ class SleeperHandler
         self::$states[$this->handlerId] = $this->state;
     }
 
-    public function addNotifier(\Closure $handler): SleeperHandlerEntry
+    public function addNotifier(\Closure|SleeperNotifier $handler, ?\Closure $legacyHandler = null): SleeperHandlerEntry
     {
+        $externalNotifier = null;
+        if ($handler instanceof SleeperNotifier) {
+            $externalNotifier = $handler;
+            $handler = $legacyHandler ?? static function (): void {};
+        }
         $id = $this->nextId++;
         $this->notifiers[$id] = $handler;
         self::$registry[$this->handlerId][$id] = $handler;
+        if ($externalNotifier !== null) {
+            $externalNotifier->bind($this->state, $id);
+        }
         return new SleeperHandlerEntry($this->handlerId, $this->state, $id);
     }
 

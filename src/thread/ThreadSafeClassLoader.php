@@ -6,6 +6,8 @@ namespace pocketmine\thread;
 
 class ThreadSafeClassLoader extends \pmmp\thread\ThreadSafe
 {
+    private const ENV_PATHS = 'PMMPCOMPAT_CLASSLOAD_PATHS';
+
     private static ?self $default = null;
 
     private \pmmp\thread\ThreadSafeArray $paths;
@@ -34,6 +36,50 @@ class ThreadSafeClassLoader extends \pmmp\thread\ThreadSafe
             $this->paths[$prefix] = \pmmp\thread\ThreadSafeArray::fromArray($current);
         } else {
             $paths[] = rtrim($path, '/\\');
+        }
+        self::writeEnvironmentPaths(self::snapshotPaths());
+    }
+
+    public static function loadEnvironmentPaths(): void
+    {
+        $raw = getenv(self::ENV_PATHS);
+        if ($raw === false || $raw === '') {
+            return;
+        }
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded)) {
+            return;
+        }
+        $loader = self::getDefault();
+        foreach ($decoded as $prefix => $paths) {
+            if (!is_string($prefix) || !is_array($paths)) {
+                continue;
+            }
+            foreach ($paths as $path) {
+                if (is_string($path)) {
+                    $loader->addPath($prefix, $path);
+                }
+            }
+        }
+    }
+
+    /** @return array<string, list<string>> */
+    private static function snapshotPaths(): array
+    {
+        $loader = self::getDefault();
+        $out = [];
+        foreach ($loader->paths as $prefix => $paths) {
+            $out[$prefix] = method_exists($paths, 'toArray') ? array_values($paths->toArray()) : array_values(iterator_to_array($paths));
+        }
+        return $out;
+    }
+
+    /** @param array<string, list<string>> $paths */
+    private static function writeEnvironmentPaths(array $paths): void
+    {
+        $encoded = json_encode($paths);
+        if (is_string($encoded)) {
+            putenv(self::ENV_PATHS . '=' . $encoded);
         }
     }
 

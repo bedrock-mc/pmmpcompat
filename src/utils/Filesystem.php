@@ -116,10 +116,7 @@ final class Filesystem
 
     public static function releaseLockFile(string $lockFilePath): void
     {
-        $real = realpath($lockFilePath);
-        if ($real === false) {
-            throw new \InvalidArgumentException('Invalid lock file path');
-        }
+        $real = realpath($lockFilePath) ?: $lockFilePath;
         if (isset(self::$lockFileHandles[$real])) {
             flock(self::$lockFileHandles[$real], LOCK_UN);
             fclose(self::$lockFileHandles[$real]);

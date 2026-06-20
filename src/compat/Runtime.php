@@ -26,6 +26,7 @@ use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\plugin\PluginLoader;
 use pocketmine\Server;
+use pocketmine\thread\ThreadManager;
 use pocketmine\world\BlockTransaction;
 use pocketmine\world\Position;
 
@@ -69,6 +70,16 @@ class Runtime
         for ($i = count($this->plugins) - 1; $i >= 0; $i--) {
             $this->plugins[$i]->__pmmpCallDisable();
         }
+    }
+
+    public function shutdown(bool $drainAsyncPool = true): void
+    {
+        $this->disable();
+        $this->server->getScheduler()->shutdown();
+        if ($drainAsyncPool) {
+            $this->server->getAsyncPool()->shutdown();
+        }
+        ThreadManager::getInstance()->stopAll();
     }
 
     public function server(): Server

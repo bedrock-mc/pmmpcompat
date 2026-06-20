@@ -15,6 +15,7 @@ class VanillaEffects
             'speed' => new SpeedEffect('Speed', new Color(124, 175, 198)),
             'slowness' => new SlownessEffect('Slowness', new Color(90, 108, 129), true),
             'haste' => new Effect('Haste', new Color(217, 192, 67)),
+            'mining_fatigue' => new Effect('Mining Fatigue', new Color(74, 66, 23), true),
             'strength' => new Effect('Strength', new Color(147, 36, 35)),
             'instant_health' => new InstantHealthEffect('Instant Health', new Color(248, 36, 35)),
             'instant_damage' => new InstantDamageEffect('Instant Damage', new Color(67, 10, 9), true),
@@ -35,6 +36,22 @@ class VanillaEffects
             'absorption' => new AbsorptionEffect('Absorption', new Color(37, 82, 165)),
             'saturation' => new SaturationEffect('Saturation', new Color(248, 36, 35)),
             'levitation' => new LevitationEffect('Levitation', new Color(206, 255, 255)),
+            'fatal_poison' => new PoisonEffect('Fatal Poison', new Color(78, 147, 49), true),
+            'conduit_power' => new Effect('Conduit Power', new Color(29, 194, 202)),
+            'slow_falling' => new Effect('Slow Falling', new Color(247, 242, 203)),
+            'bad_omen' => new Effect('Bad Omen', new Color(11, 71, 23), true),
+            'village_hero' => new Effect('Village Hero', new Color(68, 255, 68)),
+            'darkness' => new Effect('Darkness', new Color(41, 39, 33), true),
         ];
+    }
+
+    public static function __callStatic(string $name, array $arguments): Effect
+    {
+        $key = strtolower($name);
+        $effects = self::getAll();
+        if (isset($effects[$key])) {
+            return $effects[$key];
+        }
+        throw new \InvalidArgumentException("Unknown vanilla effect $name");
     }
 }
