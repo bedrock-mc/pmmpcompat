@@ -83,6 +83,7 @@ type CommandInfo struct {
 	Description string   `json:"description"`
 	Aliases     []string `json:"aliases"`
 	Permission  string   `json:"permission"`
+	Usage       string   `json:"usage"`
 }
 
 type CommandsResult struct {

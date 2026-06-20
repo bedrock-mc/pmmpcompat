@@ -119,6 +119,7 @@ function commands(Runtime $runtime): array
             'description' => $command->getDescription(),
             'aliases' => $command->getAliases(),
             'permission' => $command->getPermission(),
+            'usage' => $command->getUsage(),
         ];
     }
     return ['commands' => $commands];
