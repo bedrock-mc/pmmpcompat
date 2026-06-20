@@ -246,24 +246,12 @@ type pmmpCommand struct {
 }
 
 func (c pmmpCommand) Run(src cmd.Source, o *cmd.Output, _ *world.Context) {
-	p, ok := src.(*player.Player)
-	if !ok {
+	if _, ok := src.(*player.Player); !ok {
 		o.Errorf("PocketMine commands can only be run by players.")
 		return
 	}
-	callCtx, cancel := c.runtime.context()
-	defer cancel()
-	rawArgs := strings.Fields(string(c.Args))
-	_, actions, err := c.runtime.client.Command(callCtx, p.UUID().String(), p.Name(), c.label, rawArgs)
-	if err != nil {
-		o.Errorf("PocketMine command failed: %v", err)
-		c.runtime.report(err)
-		return
-	}
-	if err := c.runtime.applyActions(callCtx, actions); err != nil {
-		o.Errorf("PocketMine command actions failed: %v", err)
-		c.runtime.report(err)
-	}
+	// PMMP commands are forwarded from HandleCommandExecution so Dragonfly's
+	// event path preserves the exact parsed argument slice.
 }
 
 func (c pmmpCommand) DescribeParams(cmd.Source) []cmd.ParamInfo {
@@ -308,21 +296,20 @@ func (h *Handler) HandleChat(ctx *player.Context, message *string) {
 }
 
 func (h *Handler) HandleCommandExecution(ctx *player.Context, command cmd.Command, args []string) {
-	if h.runtime.ownsCommand(command.Name()) {
-		return
-	}
 	callCtx, cancel := h.runtime.context()
 	defer cancel()
 	result, actions, err := h.runtime.client.Command(callCtx, h.uuid, h.name, command.Name(), args)
 	if err != nil {
 		h.runtime.report(err)
-		ctx.Cancel()
+		if ctx != nil {
+			ctx.Cancel()
+		}
 		return
 	}
 	if err := h.runtime.applyActions(callCtx, actions); err != nil {
 		h.runtime.report(err)
 	}
-	if result.Handled {
+	if ctx != nil && (result.Handled || h.runtime.ownsCommand(command.Name())) {
 		ctx.Cancel()
 	}
 }

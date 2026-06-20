@@ -39,12 +39,17 @@ func parsePMMPUsage(name, usage string) [][]cmd.ParamInfo {
 		params := make([]cmd.ParamInfo, 0, len(tokens))
 		used := map[string]int{}
 		for i, token := range tokens {
+			descriptionStarts := strings.HasSuffix(token, ":")
+			token = strings.TrimSuffix(token, ":")
 			param, ok := usageTokenParam(token, i == len(tokens)-1)
 			if !ok {
 				continue
 			}
 			param.Name = uniqueParamName(param.Name, used)
 			params = append(params, param)
+			if descriptionStarts {
+				break
+			}
 		}
 		overloads = append(overloads, params)
 	}
@@ -73,9 +78,12 @@ func usageLines(usage string) []string {
 }
 
 func stripUsageCommand(name, line string) string {
+	line = stripCommandFormatting(line)
 	line = strings.TrimSpace(strings.TrimPrefix(line, "Usage:"))
 	line = strings.TrimSpace(strings.TrimPrefix(line, "usage:"))
 	line = strings.TrimSpace(line)
+	line = strings.TrimSpace(strings.TrimPrefix(line, "-"))
+	line = strings.TrimSpace(strings.TrimPrefix(line, "•"))
 	fields := strings.Fields(line)
 	if len(fields) == 0 {
 		return ""
@@ -172,6 +180,24 @@ func cleanParamName(name string) string {
 	}
 	if b.Len() == 0 {
 		return "value"
+	}
+	return b.String()
+}
+
+func stripCommandFormatting(s string) string {
+	var b strings.Builder
+	skipNext := false
+	for _, r := range s {
+		if skipNext {
+			skipNext = false
+			continue
+		}
+		switch r {
+		case '§':
+			skipNext = true
+			continue
+		}
+		b.WriteRune(r)
 	}
 	return b.String()
 }

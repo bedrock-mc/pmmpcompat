@@ -2,9 +2,11 @@ package dragonfly
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	pmmpcompat "github.com/bedrock-mc/pmmpcompat/host/go"
+	"github.com/df-mc/dragonfly/server/cmd"
 )
 
 func TestRegisterCommandsMarksPMMPOwnedLabels(t *testing.T) {
@@ -52,6 +54,22 @@ func TestHandleChatAppliesNonEmptyPMMPMessage(t *testing.T) {
 	}
 }
 
+func TestHandleCommandExecutionForwardsOwnedPMMPCommand(t *testing.T) {
+	client := &commandCaptureClient{}
+	rt := NewRuntime(client, nil, RuntimeOptions{})
+	rt.registerCommandLabels("f", nil)
+	h := &Handler{runtime: rt, uuid: "00000000-0000-4000-8000-000000000001", name: "Steve"}
+
+	h.HandleCommandExecution(nil, cmd.New("f", "Faction command", nil, pmmpCommand{runtime: rt, label: "f"}), []string{"create", "Test"})
+
+	if client.command != "f" {
+		t.Fatalf("command = %q, want f", client.command)
+	}
+	if !reflect.DeepEqual(client.args, []string{"create", "Test"}) {
+		t.Fatalf("args = %#v, want create/Test", client.args)
+	}
+}
+
 type commandListClient struct {
 	RuntimeClient
 	commands []pmmpcompat.CommandInfo
@@ -68,4 +86,16 @@ type chatClient struct {
 
 func (c chatClient) Chat(context.Context, string, string, string) (pmmpcompat.ChatResult, []pmmpcompat.Action, error) {
 	return c.result, nil, nil
+}
+
+type commandCaptureClient struct {
+	RuntimeClient
+	command string
+	args    []string
+}
+
+func (c *commandCaptureClient) Command(_ context.Context, _, _, command string, args []string) (pmmpcompat.CommandResult, []pmmpcompat.Action, error) {
+	c.command = command
+	c.args = append([]string(nil), args...)
+	return pmmpcompat.CommandResult{Handled: true}, nil, nil
 }
