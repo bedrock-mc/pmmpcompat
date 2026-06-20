@@ -1,5 +1,5 @@
-github.com/HashimTheArab/dragonfly v0.0.0-20260620020306-e42382511fda h1:Iuh0tLETCcNxHlsCDGHGsiyhhJaJyPmkm0erdktRs1I=
-github.com/HashimTheArab/dragonfly v0.0.0-20260620020306-e42382511fda/go.mod h1:OFJjCz3xfDalVZEtV4lJdbenwKDEAczKHikHN7kVwMc=
+github.com/HashimTheArab/dragonfly v0.0.0-20260620020734-fd045d3749f9 h1:iUUAVusC5qYAFTXtXyKOb0X0rxCTChR4lDc+6PXODK8=
+github.com/HashimTheArab/dragonfly v0.0.0-20260620020734-fd045d3749f9/go.mod h1:OFJjCz3xfDalVZEtV4lJdbenwKDEAczKHikHN7kVwMc=
 github.com/bedrock-mc/plugin/shared/dragonflyhost v0.0.0-20260620010435-b508b1fa94f1 h1:+whuwNc0Sd4bGn1dS9X6QPK4gewA9n7LeoKrKgvsGno=
 github.com/bedrock-mc/plugin/shared/dragonflyhost v0.0.0-20260620010435-b508b1fa94f1/go.mod h1:EhBfNuqs5pPhAQt4RSbLJYQ/v6osIMEY7h7DTnR3bZk=
 github.com/bedrock-mc/pmmpcompat/host/go v0.0.0-20260620015017-d00f2a96752c h1:z9nGALu1FJaCY4gVi9BW4BlNoEQZOAbx137unITGHqQ=

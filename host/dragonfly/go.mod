@@ -32,4 +32,4 @@ require (
 	golang.org/x/text v0.34.0 // indirect
 )
 
-replace github.com/df-mc/dragonfly => github.com/HashimTheArab/dragonfly v0.0.0-20260620020306-e42382511fda
+replace github.com/df-mc/dragonfly => github.com/HashimTheArab/dragonfly v0.0.0-20260620020734-fd045d3749f9
