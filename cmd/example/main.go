@@ -140,7 +140,9 @@ func run() error {
 				p.Disconnect("PocketMine runtime error")
 				return
 			}
-			p.Handle(h)
+			p.Schedule(func(p *player.Player, _ *world.Context) {
+				p.Handle(h)
+			})
 			log.Info("player bridged", "player", p.Name(), "uuid", p.UUID())
 		}()
 	}
