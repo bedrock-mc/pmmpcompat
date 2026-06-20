@@ -89,7 +89,10 @@ func stripUsageCommand(name, line string) string {
 		return ""
 	}
 	first := strings.TrimPrefix(fields[0], "/")
-	if strings.EqualFold(first, name) {
+	if strings.EqualFold(strings.TrimSuffix(first, ":"), name) {
+		if strings.HasSuffix(first, ":") {
+			return ""
+		}
 		return strings.Join(fields[1:], " ")
 	}
 	return line

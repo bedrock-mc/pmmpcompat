@@ -669,6 +669,14 @@ $messages = $sender->sentMessages();
 assert(end($messages) === 'hello world');
 assert($server->getPluginCommand('hello') === $command);
 assert($server->getCommandAliases()['hello'] === ['hi']);
+class UsageMessageCommand extends \pocketmine\command\Command {
+    public function __construct() {
+        parent::__construct('usage-test');
+        $this->usageMessage = '/usage-test <value:string>';
+    }
+}
+$usageCommand = new UsageMessageCommand();
+assert($usageCommand->getUsage() === '/usage-test <value:string>');
 $command->setExecutor(new class implements CommandExecutor {
     public function onCommand(\pocketmine\command\CommandSender $sender, \pocketmine\command\Command $command, string $label, array $args): bool
     {

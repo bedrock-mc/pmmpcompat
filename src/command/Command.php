@@ -8,7 +8,7 @@ class Command
 {
     /** @var string[] */
     private array $aliases = [];
-    private string $usage = '';
+    protected string $usageMessage = '';
 
     /** @param string[] $aliases */
     public function __construct(
@@ -26,7 +26,7 @@ class Command
         }
         $this->aliases = array_values(array_map('strval', $aliases));
         $this->label = $this->label === '' ? $this->name : $this->label;
-        $this->usage = $usageMessage === null || $usageMessage === '' ? '/' . $this->name : (string) $usageMessage;
+        $this->usageMessage = $usageMessage === null || $usageMessage === '' ? '/' . $this->name : (string) $usageMessage;
     }
 
     public function __toString(): string
@@ -122,12 +122,12 @@ class Command
 
     public function getUsage(): string
     {
-        return $this->usage;
+        return $this->usageMessage;
     }
 
     public function setUsage(string $usage): void
     {
-        $this->usage = $usage;
+        $this->usageMessage = $usage;
     }
 
     public function getLabel(): string

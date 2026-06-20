@@ -54,23 +54,23 @@ func TestParsePMMPUsageBuildsEnumsAndNumbers(t *testing.T) {
 
 func TestParsePMMPUsageHandlesCommandoFormattedUsage(t *testing.T) {
 	overloads := parsePMMPUsage("f", "§c/f: The PiggyFactions command\n - §c/f create <name:string>: Create a faction\n - §c/f version: Display version")
-	if len(overloads) != 3 {
-		t.Fatalf("overloads = %d, want 3", len(overloads))
+	if len(overloads) != 2 {
+		t.Fatalf("overloads = %d, want 2", len(overloads))
 	}
-	if len(overloads[1]) != 2 {
-		t.Fatalf("create overload = %#v, want subcommand and name param", overloads[1])
+	if len(overloads[0]) != 2 {
+		t.Fatalf("create overload = %#v, want subcommand and name param", overloads[0])
 	}
-	if got := overloads[1][0]; got.Name != "create" {
+	if got := overloads[0][0]; got.Name != "create" {
 		t.Fatalf("create subcommand = %#v", got)
 	} else if _, ok := got.Value.(cmd.SubCommand); !ok {
 		t.Fatalf("create value = %T, want cmd.SubCommand", got.Value)
 	}
-	if got := overloads[1][1]; got.Name != "name" {
+	if got := overloads[0][1]; got.Name != "name" {
 		t.Fatalf("name param = %#v", got)
 	} else if _, ok := got.Value.(string); !ok {
 		t.Fatalf("name value = %T, want string", got.Value)
 	}
-	if len(overloads[2]) != 1 || overloads[2][0].Name != "version" {
-		t.Fatalf("version overload = %#v, want version subcommand only", overloads[2])
+	if len(overloads[1]) != 1 || overloads[1][0].Name != "version" {
+		t.Fatalf("version overload = %#v, want version subcommand only", overloads[1])
 	}
 }

@@ -59,11 +59,14 @@ func TestClientDrivesPMMPRuntimeProcess(t *testing.T) {
 	if len(actions) != 0 {
 		t.Fatalf("commands actions = %#v", actions)
 	}
-	if len(commands.Commands) != 4 || commands.Commands[0].Name != "echo" {
+	if len(commands.Commands) != 5 || commands.Commands[0].Name != "echo" {
 		t.Fatalf("commands result = %#v", commands)
 	}
 	if commands.Commands[0].Usage != "/echo <message...>" {
 		t.Fatalf("echo usage = %q", commands.Commands[0].Usage)
+	}
+	if commands.Commands[4].Name != "dynusage" || commands.Commands[4].Usage != "/dynusage <value:string>" {
+		t.Fatalf("dynamic usage command = %#v", commands.Commands[4])
 	}
 
 	join, actions, err := client.PlayerJoin(ctx, "00000000-0000-4000-8000-000000000401", "Steve")
@@ -375,6 +378,17 @@ use pocketmine\world\World;
 class EchoPlugin extends PluginBase implements Listener {
     protected function onEnable(): void {
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
+        $this->getServer()->getCommandMap()->register('fixture', new class('dynusage') extends Command {
+            public function __construct(string $name) {
+                parent::__construct($name);
+                $this->usageMessage = '/dynusage <value:string>';
+            }
+
+            public function execute(CommandSender $sender, string $label, array $args): bool {
+                $sender->sendMessage('dynusage ' . implode(' ', $args));
+                return true;
+            }
+        });
     }
 
     public function onJoin(PlayerJoinEvent $event): void {
