@@ -70,6 +70,9 @@ class SimpleCommandMap implements CommandMap
     public function dispatch(CommandSender $sender, string $name, array $args): bool
     {
         $command = $this->getCommand($name);
-        return $command !== null && $command->execute($sender, $name, $args);
+        if ($command === null) {
+            return false;
+        }
+        return $command->execute($sender, $name, $args) !== false;
     }
 }

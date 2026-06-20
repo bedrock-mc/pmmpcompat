@@ -1003,16 +1003,15 @@ $crashException = new ThreadCrashException('crashed', $crashInfo);
 assert($crashException->getCrashInfo() === $crashInfo);
 
 ThreadManager::init();
-$threadRan = false;
-$thread = new class($threadRan) extends Thread {
-    public function __construct(private bool &$ran) {}
+$thread = new class extends Thread {
+    public bool $ran = false;
 
     protected function onRun(): void
     {
         $this->ran = true;
     }
 };
-assert($thread->start() === true && $threadRan === true);
+assert($thread->start() === true && $thread->ran === true);
 assert($thread->isStarted() === true && $thread->isTerminated() === true);
 assert(ThreadManager::getInstance()->getAll() !== []);
 assert($thread->join() === true);
@@ -1571,7 +1570,10 @@ $packPath = $packDir . '/compat.mcpack';
 $packUuid = '123e4567-e89b-12d3-a456-426614174000';
 $moduleUuid = '123e4567-e89b-12d3-a456-426614174001';
 $zip = new ZipArchive();
-assert($zip->open($packPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true);
+@unlink($packPath);
+if ($zip->open($packPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+    throw new RuntimeException('Failed to create resource pack zip at ' . $packPath);
+}
 $zip->addFromString('manifest.json', json_encode([
     'format_version' => 2,
     'header' => [

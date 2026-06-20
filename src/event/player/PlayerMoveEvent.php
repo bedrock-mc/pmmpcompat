@@ -6,19 +6,19 @@ namespace pocketmine\event\player;
 
 use pocketmine\event\Cancellable;
 use pocketmine\event\CancellableTrait;
-use pocketmine\math\Vector3;
 use pocketmine\player\Player;
+use pocketmine\world\Position;
 
 class PlayerMoveEvent extends PlayerEvent implements Cancellable
 {
     use CancellableTrait;
 
-    public function __construct(Player $player, private Vector3 $from, private Vector3 $to)
+    public function __construct(Player $player, private Position $from, private Position $to)
     {
         parent::__construct($player);
     }
 
-    public function getFrom(): Vector3 { return $this->from; }
-    public function getTo(): Vector3 { return $this->to; }
-    public function setTo(Vector3 $to): void { $this->to = $to; }
+    public function getFrom(): Position { return $this->from; }
+    public function getTo(): Position { return $this->to; }
+    public function setTo(Position $to): void { $this->to = $to; }
 }

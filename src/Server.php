@@ -60,7 +60,7 @@ class Server
 
     public function __construct(private ?ServerBridge $bridge = null)
     {
-        self::$instance ??= $this;
+        self::$instance = $this;
         $this->commandMap = new SimpleCommandMap();
         $this->pluginManager = new PluginManager($this);
         $this->scheduler = new TaskScheduler('server');

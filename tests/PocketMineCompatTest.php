@@ -12,6 +12,7 @@ use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\player\PlayerCommandPreprocessEvent;
 use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\event\player\PlayerJoinEvent;
+use pocketmine\event\player\PlayerMoveEvent;
 use pocketmine\form\SimpleForm;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
@@ -23,6 +24,7 @@ use pocketmine\plugin\PluginLoader;
 use pocketmine\scheduler\ClosureTask;
 use pocketmine\Server;
 use pocketmine\utils\Config;
+use pocketmine\world\Position;
 use pocketmine\world\World;
 use Ramsey\Uuid\UuidInterface;
 
@@ -67,6 +69,66 @@ final class PocketMineCompatTest extends TestCase
 
         $plugin->__pmmpCallDisable();
         self::assertTrue($plugin->disabled);
+    }
+
+    public function testPluginPermissionDefaultTrueAllowsNormalPlayerCommand(): void
+    {
+        $server = new Server();
+        $root = sys_get_temp_dir() . '/pmmpcompat-default-permission-' . getmypid();
+        @mkdir($root . '/src/Fixture', 0777, true);
+        file_put_contents($root . '/plugin.yml', <<<'YAML'
+name: DefaultPermissionPlugin
+main: Fixture\DefaultPermissionPlugin
+version: 1.0.0
+commands:
+  open:
+    description: Open command
+    permission: fixture.open
+    permission-message: no permission
+permissions:
+  fixture.open:
+    description: Open fixture command
+    default: true
+YAML);
+        file_put_contents($root . '/src/Fixture/DefaultPermissionPlugin.php', <<<'PHP'
+<?php
+namespace Fixture;
+
+use pocketmine\command\Command;
+use pocketmine\command\CommandSender;
+use pocketmine\plugin\PluginBase;
+
+class DefaultPermissionPlugin extends PluginBase {
+    public function onCommand(CommandSender $sender, Command $command, string $label, array $args): bool {
+        $sender->sendMessage('open ok');
+        return true;
+    }
+}
+PHP);
+
+        $plugin = (new PluginLoader($server))->loadFolder($root);
+        $plugin->__pmmpCallEnable();
+
+        $sender = new Player('00000000-0000-4000-8000-000000000006', 'Normal');
+        self::assertFalse($sender->isOp());
+        self::assertTrue($sender->hasPermission('fixture.open'));
+        self::assertTrue($server->getCommandMap()->dispatch($sender, 'open', []));
+        self::assertSame(['open ok'], $sender->sentMessages());
+    }
+
+    public function testCommandDispatchTreatsVoidExecutionAsHandled(): void
+    {
+        $server = new Server();
+        $server->getCommandMap()->register('fixture', new class('void') extends \pocketmine\command\Command {
+            public function execute(\pocketmine\command\CommandSender $sender, string $label, array $args): void
+            {
+                $sender->sendMessage('void handled');
+            }
+        });
+
+        $sender = new Player('00000000-0000-4000-8000-000000000007', 'Void');
+        self::assertTrue($server->getCommandMap()->dispatch($sender, 'void', []));
+        self::assertSame(['void handled'], $sender->sentMessages());
     }
 
     public function testPluginManagerDispatchesTypedListeners(): void
@@ -203,6 +265,14 @@ final class PocketMineCompatTest extends TestCase
         $command = new PlayerCommandPreprocessEvent($player, '/hello world');
         $command->setMessage('/hi there');
         self::assertSame('/hi there', $command->getMessage());
+
+        $world = new World('arena');
+        $from = new Position(1, 64, 1, $world);
+        $to = new Position(2, 65, 3, $world);
+        $move = new PlayerMoveEvent($player, $from, $to);
+        self::assertSame($from, $move->getFrom());
+        self::assertSame($to, $move->getTo());
+        self::assertSame($world, $move->getTo()->getWorld());
 
         $damage = new EntityDamageByEntityEvent($player, new \stdClass(), EntityDamageEvent::CAUSE_ENTITY_ATTACK, 4.0);
         self::assertSame($player, $damage->getDamager());

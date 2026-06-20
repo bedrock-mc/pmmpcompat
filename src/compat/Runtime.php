@@ -156,7 +156,7 @@ class Runtime
         return $command !== '' && $this->server->getCommandMap()->dispatch($player, $command, $dispatchArgs);
     }
 
-    public function playerMove(string $uuid, string $name, Vector3 $to): PlayerMoveEvent
+    public function playerMove(string $uuid, string $name, Position $to): PlayerMoveEvent
     {
         $player = $this->server->getPlayerByUUID($uuid) ?? new Player($uuid, $name);
         $event = new PlayerMoveEvent($player, $player->getPosition(), $to);

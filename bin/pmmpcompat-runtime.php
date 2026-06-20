@@ -148,8 +148,8 @@ function command(Runtime $runtime, array $payload): array
 /** @return array<string, mixed> */
 function playerMove(Runtime $runtime, array $payload): array
 {
-    $event = $runtime->playerMove(stringValue($payload, 'uuid'), stringValue($payload, 'name'), vectorValue($payload, 'to'));
-    return ['cancelled' => $event->isCancelled(), 'from' => vectorPayload($event->getFrom()), 'to' => vectorPayload($event->getTo())];
+    $event = $runtime->playerMove(stringValue($payload, 'uuid'), stringValue($payload, 'name'), positionValue($payload, 'to'));
+    return ['cancelled' => $event->isCancelled(), 'from' => positionPayload($event->getFrom()), 'to' => positionPayload($event->getTo())];
 }
 
 /** @return array<string, mixed> */

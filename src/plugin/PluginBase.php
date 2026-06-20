@@ -8,6 +8,7 @@ use pocketmine\command\Command;
 use pocketmine\command\CommandExecutor;
 use pocketmine\command\CommandSender;
 use pocketmine\permission\Permission;
+use pocketmine\permission\PermissionParser;
 use pocketmine\scheduler\TaskScheduler;
 use pocketmine\Server;
 use pocketmine\utils\Config;
@@ -52,7 +53,11 @@ abstract class PluginBase implements CommandExecutor, Plugin
         if (!$this->enabled) {
             $this->enabled = true;
             foreach ($this->getDescription()->getPermissions() as $name => $spec) {
-                $this->getServer()->getPermissionManager()->addPermission(new Permission((string) $name, is_array($spec) ? (string) ($spec['description'] ?? '') : ''));
+                $this->getServer()->getPermissionManager()->addPermission(new Permission(
+                    (string) $name,
+                    is_array($spec) ? (string) ($spec['description'] ?? '') : '',
+                    is_array($spec) && array_key_exists('default', $spec) ? PermissionParser::defaultFromString($spec['default']) : Permission::DEFAULT_FALSE,
+                ));
             }
             foreach ($this->getDescription()->getCommandMap() as $name => $spec) {
                 $this->getServer()->getCommandMap()->register((string) $name, new \pocketmine\command\PluginCommand((string) $name, $this, is_array($spec) ? $spec : []));

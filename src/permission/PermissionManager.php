@@ -15,7 +15,7 @@ class PermissionManager
 
     public function __construct()
     {
-        self::$instance ??= $this;
+        self::$instance = $this;
     }
 
     public static function getInstance(): self

@@ -49,6 +49,9 @@ trait CommonThreadPartsTrait
             $this->setClassLoaders();
         }
         try {
+            if (method_exists($this, 'setRunning')) {
+                $this->setRunning(true);
+            }
             return parent::start($options) && $this->crashInfo === null;
         } catch (\Throwable $e) {
             $this->crashInfo = ThreadCrashInfo::fromThrowable($e, $this->getThreadName());

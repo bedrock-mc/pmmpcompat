@@ -12,6 +12,8 @@ use pocketmine\inventory\Inventory;
 use pocketmine\item\Item;
 use pocketmine\lang\Translatable;
 use pocketmine\math\Vector3;
+use pocketmine\permission\Permission;
+use pocketmine\permission\PermissionManager;
 use pocketmine\Server;
 use pocketmine\world\Position;
 use pocketmine\world\World;
@@ -302,7 +304,20 @@ class Player implements CommandSender
 
     public function hasPermission(string $name): bool
     {
-        return $this->op || ($this->permissions[strtolower($name)] ?? false);
+        $key = strtolower($name);
+        if (array_key_exists($key, $this->permissions)) {
+            return $this->permissions[$key];
+        }
+        $permission = PermissionManager::getInstance()->getPermission($name);
+        if ($permission !== null) {
+            return match ($permission->getDefault()) {
+                Permission::DEFAULT_TRUE => true,
+                Permission::DEFAULT_OP => $this->op,
+                Permission::DEFAULT_NOT_OP => !$this->op,
+                default => false,
+            };
+        }
+        return $this->op;
     }
 
     public function addPermission(string $name): void
