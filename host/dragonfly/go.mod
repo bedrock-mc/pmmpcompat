@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/bedrock-mc/plugin/shared/dragonflyhost v0.0.0-20260620010435-b508b1fa94f1
-	github.com/bedrock-mc/pmmpcompat/host/go v0.0.0-20260620004850-bf4cf662a700
+	github.com/bedrock-mc/pmmpcompat/host/go v0.0.0-20260620015017-d00f2a96752c
 	github.com/df-mc/dragonfly v0.10.15-0.20260617164324-7f68b0673dd7
 	github.com/go-gl/mathgl v1.2.0
 )

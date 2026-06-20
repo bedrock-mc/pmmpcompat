@@ -62,6 +62,9 @@ func TestClientDrivesPMMPRuntimeProcess(t *testing.T) {
 	if len(commands.Commands) != 4 || commands.Commands[0].Name != "echo" {
 		t.Fatalf("commands result = %#v", commands)
 	}
+	if commands.Commands[0].Usage != "/echo <message...>" {
+		t.Fatalf("echo usage = %q", commands.Commands[0].Usage)
+	}
 
 	join, actions, err := client.PlayerJoin(ctx, "00000000-0000-4000-8000-000000000401", "Steve")
 	if err != nil {
@@ -338,6 +341,7 @@ version: 1.0.0
 commands:
   echo:
     description: Echo command
+    usage: /echo <message...>
   slot:
     description: Report inventory slot
   state:

@@ -170,7 +170,7 @@ func (r *Runtime) RegisterCommands(ctx context.Context) error {
 		if description == "" {
 			description = "PocketMine plugin command"
 		}
-		cmd.Register(cmd.New(name, description, aliases, pmmpCommand{runtime: r, label: name}))
+		cmd.Register(cmd.New(name, description, aliases, pmmpCommandRunnables(r, name, info)...))
 		r.registerCommandLabels(name, aliases)
 	}
 	return nil
@@ -239,9 +239,10 @@ type Handler struct {
 }
 
 type pmmpCommand struct {
+	runtime *Runtime `cmd:"-"`
+	label   string   `cmd:"-"`
+	params  []cmd.ParamInfo
 	Args    cmd.Varargs `cmd:"args"`
-	runtime *Runtime    `cmd:"-"`
-	label   string      `cmd:"-"`
 }
 
 func (c pmmpCommand) Run(src cmd.Source, o *cmd.Output, _ *world.Tx) {
@@ -263,6 +264,10 @@ func (c pmmpCommand) Run(src cmd.Source, o *cmd.Output, _ *world.Tx) {
 		o.Errorf("PocketMine command actions failed: %v", err)
 		c.runtime.report(err)
 	}
+}
+
+func (c pmmpCommand) DescribeParams(cmd.Source) []cmd.ParamInfo {
+	return c.params
 }
 
 func (h *Handler) HandleMove(ctx *player.Context, newPos mgl64.Vec3, _ cube.Rotation) {
