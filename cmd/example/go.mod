@@ -3,7 +3,7 @@ module github.com/bedrock-mc/pmmpcompat/cmd/example
 go 1.26.0
 
 require (
-	github.com/bedrock-mc/pmmpcompat/host/dragonfly v0.0.0-20260620015128-ed3fb204e78d
+	github.com/bedrock-mc/pmmpcompat/host/dragonfly v0.0.0-20260620020843-e8ae52b3d9b0
 	github.com/bedrock-mc/pmmpcompat/host/go v0.0.0-20260620015017-d00f2a96752c
 	github.com/df-mc/dragonfly v0.10.15-0.20260617164324-7f68b0673dd7
 )
@@ -26,7 +26,6 @@ require (
 	github.com/sandertv/go-raknet v1.15.1-0.20260112202637-beca0b10c217 // indirect
 	github.com/sandertv/gophertunnel v1.57.0 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect
-	github.com/zaataylor/cartesian v0.0.0-20221028053253-3b3244d82727 // indirect
 	golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329 // indirect
 	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/net v0.50.0 // indirect
