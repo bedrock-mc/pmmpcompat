@@ -2,6 +2,8 @@ github.com/bedrock-mc/plugin/shared/dragonflyhost v0.0.0-20260620010435-b508b1fa
 github.com/bedrock-mc/plugin/shared/dragonflyhost v0.0.0-20260620010435-b508b1fa94f1/go.mod h1:EhBfNuqs5pPhAQt4RSbLJYQ/v6osIMEY7h7DTnR3bZk=
 github.com/bedrock-mc/pmmpcompat/host/dragonfly v0.0.0-20260620010920-48d2df431498 h1:gZLXwilLUxhX2mCOlLmzzdjuGk9VtaSYuP9trYTgHUU=
 github.com/bedrock-mc/pmmpcompat/host/dragonfly v0.0.0-20260620010920-48d2df431498/go.mod h1:FluQzWM+VbSpzK75XrGowm7Btb55qaxUs3yK4Lu6q8s=
+github.com/bedrock-mc/pmmpcompat/host/dragonfly v0.0.0-20260620013824-30a143b52089 h1:U3SiNVYrInVIAzbtVwcX4W35euW5q83dYC5bZs0S7ak=
+github.com/bedrock-mc/pmmpcompat/host/dragonfly v0.0.0-20260620013824-30a143b52089/go.mod h1:FluQzWM+VbSpzK75XrGowm7Btb55qaxUs3yK4Lu6q8s=
 github.com/bedrock-mc/pmmpcompat/host/go v0.0.0-20260620004850-bf4cf662a700 h1:ZAnxsY9O753nlYL4q2JpZNbSxieJLaf4nm/cm1WfORw=
 github.com/bedrock-mc/pmmpcompat/host/go v0.0.0-20260620004850-bf4cf662a700/go.mod h1:b3jkh/l6CeF6BHU7Luvkfp+/oz36uMjjogmgKhyqGO4=
 github.com/brentp/intintmap v0.0.0-20251106190759-56907b1f8479 h1:UZbbt19ACBOFO+CiDQFjaEoPJkBhj7GNGtIq59WR6Os=
