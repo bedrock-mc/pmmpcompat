@@ -127,7 +127,14 @@ cd cmd/example
 ./start.sh
 ```
 
-`start.sh` downloads the current PMMP PHP 8.2 binary from [pmmp/PHP-Binaries `pm5-php-8.2-latest`](https://github.com/pmmp/PHP-Binaries/releases/tag/pm5-php-8.2-latest) when `cmd/example/bin/php7/bin/php` is missing. PMMP still extracts the runtime under `bin/php7` even for PHP 8.x builds. The script sets `PMMPCOMPAT_PHP`, `PMMPCOMPAT_PHP_ARGS`, `PMMPCOMPAT_PLUGINS`, and `PMMPCOMPAT_DATA`, then runs the Go example server.
+On Windows PowerShell:
+
+```powershell
+cd cmd/example
+.\start.ps1
+```
+
+`start.sh` and `start.ps1` download the current PMMP PHP 8.2 binary from [pmmp/PHP-Binaries `pm5-php-8.2-latest`](https://github.com/pmmp/PHP-Binaries/releases/tag/pm5-php-8.2-latest) when the local PMMP PHP binary is missing. PMMP still extracts the runtime under `bin/php7` even for PHP 8.x builds. The scripts set `PMMPCOMPAT_PHP`, `PMMPCOMPAT_PHP_ARGS`, `PMMPCOMPAT_PLUGINS`, and `PMMPCOMPAT_DATA`, then run the Go example server. The example modules intentionally do not use local `replace` directives, so a fresh clone resolves pushed upstream module versions directly.
 
 Useful overrides:
 
@@ -135,6 +142,14 @@ Useful overrides:
 PMMPCOMPAT_PHP=/path/to/bin/php7/bin/php ./start.sh
 PMMPCOMPAT_PLUGINS=/path/to/plugins ./start.sh -addr :19133
 PMMPCOMPAT_ONLINE_AUTH=true ./start.sh
+```
+
+PowerShell equivalents:
+
+```powershell
+$env:PMMPCOMPAT_PHP = "C:\path\to\bin\php7\php.exe"
+$env:PMMPCOMPAT_PLUGINS = "C:\path\to\plugins"
+.\start.ps1 -addr :19133
 ```
 
 By default the server listens on `:19132` with offline auth enabled for local testing. It loads/enables PMMP plugins before starting Dragonfly, registers PMMP commands as Dragonfly command stubs, bridges player joins/chat/move/block/interact/damage/death/respawn/form events, and ticks the PMMP scheduler every 50ms.
