@@ -8,7 +8,7 @@ use pocketmine\math\Vector3;
 
 class Position extends Vector3
 {
-    public function __construct(float $x, float $y, float $z, private ?World $world)
+    public function __construct(float $x, float $y, float $z, public ?World $world)
     {
         parent::__construct($x, $y, $z);
     }

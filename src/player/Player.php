@@ -6,6 +6,7 @@ namespace pocketmine\player;
 
 use pocketmine\command\CommandSender;
 use pocketmine\compat\PlayerBridge;
+use pocketmine\entity\Location;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\form\Form;
 use pocketmine\inventory\Inventory;
@@ -137,6 +138,11 @@ class Player implements CommandSender
     public function getPosition(): Position
     {
         return $this->position ??= new Position(0, 0, 0, new World('world'));
+    }
+
+    public function getLocation(): Location
+    {
+        return Location::fromObject($this->getPosition(), $this->getWorld());
     }
 
     public function getWorld(): World

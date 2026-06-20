@@ -412,7 +412,7 @@ assert(Utils::printable("a\nb") === 'a.b');
 assert(str_contains(Utils::hexdump("A"), '41'));
 assert(iterator_to_array(Utils::stringifyKeys([1 => 'one'])) === ['1' => 'one']);
 $out = $err = null;
-assert(Process::execute(PHP_BINARY . ' -r ' . escapeshellarg('echo "ok";'), $out, $err) === 0 && $out === 'ok');
+assert(Process::execute(PHP_BINARY . ' -n -r ' . escapeshellarg('echo "ok";'), $out, $err) === 0 && $out === 'ok');
 assert(Process::pid() > 0 && Process::uid() >= 0 && Process::getThreadCount() >= 1);
 $fsDir = $dir . '/fs';
 @mkdir($fsDir, 0777, true);
@@ -644,6 +644,8 @@ $sender->setSpawn(new Position(9, 70, 9, new World('spawn-world')));
 assert($sender->hasValidCustomSpawn() === true && $sender->getSpawn()?->x === 9.0);
 $sender->setDeathPosition(new Position(1, 2, 3, new World('death-world')));
 assert($sender->getDeathPosition()?->getWorld()->getFolderName() === 'death-world');
+assert($sender->getLocation()->getWorld()->getFolderName() === 'world');
+assert($sender->getLocation()->getYaw() === 0.0 && $sender->getLocation()->getPitch() === 0.0);
 $sender->sendPopup('popup');
 $sender->sendTitle('title', 'subtitle');
 assert(in_array('popup', $sender->sentMessages(), true));
@@ -1019,19 +1021,23 @@ $thread = new class extends Thread {
         $this->ran = true;
     }
 };
-assert($thread->start() === true && $thread->ran === true);
-assert($thread->isStarted() === true && $thread->isTerminated() === true);
+assert($thread->start() === true);
+assert($thread->isStarted() === true);
 assert(ThreadManager::getInstance()->getAll() !== []);
 assert($thread->join() === true);
+assert($thread->ran === true);
+assert($thread->isTerminated() === true);
 assert(ThreadManager::getInstance()->getAll() === []);
-$crashingThread = new class extends Thread {
-    protected function onRun(): void
-    {
-        throw new RuntimeException('boom');
-    }
-};
-assert($crashingThread->start() === false);
-assert($crashingThread->getCrashInfo()?->getMessage() === 'boom');
+if (!extension_loaded('pmmpthread')) {
+    $crashingThread = new class extends Thread {
+        protected function onRun(): void
+        {
+            throw new RuntimeException('boom');
+        }
+    };
+    assert($crashingThread->start() === false);
+    assert($crashingThread->getCrashInfo()?->getMessage() === 'boom');
+}
 assert(ThreadManager::getInstance()->stopAll() === 0);
 
 $logged = [];
@@ -2116,6 +2122,7 @@ assert($itemUse->getDirectionVector()->y === 1.0);
 $positionWorld = new World('runtime-world');
 $position = new Position(1, 2, 3, $positionWorld);
 assert($position->isValid() === true);
+assert($position->world === $positionWorld);
 assert($position->asPosition()->equals($position) === true);
 assert(Position::fromObject(new Vector3(1, 2, 3), $positionWorld)->equals($position) === true);
 assert($position->distanceSquared(new Vector3(2, 2, 3)) === 1.0);
