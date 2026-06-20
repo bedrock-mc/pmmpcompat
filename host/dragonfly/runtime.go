@@ -246,12 +246,24 @@ type pmmpCommand struct {
 }
 
 func (c pmmpCommand) Run(src cmd.Source, o *cmd.Output, _ *world.Context) {
-	if _, ok := src.(*player.Player); !ok {
+	p, ok := src.(*player.Player)
+	if !ok {
 		o.Errorf("PocketMine commands can only be run by players.")
 		return
 	}
-	// PMMP commands are forwarded from HandleCommandExecution so Dragonfly's
-	// event path preserves the exact parsed argument slice.
+	callCtx, cancel := c.runtime.context()
+	defer cancel()
+	rawArgs := strings.Fields(string(c.Args))
+	_, actions, err := c.runtime.client.Command(callCtx, p.UUID().String(), p.Name(), c.label, rawArgs)
+	if err != nil {
+		o.Errorf("PocketMine command failed: %v", err)
+		c.runtime.report(err)
+		return
+	}
+	if err := c.runtime.applyActions(callCtx, actions); err != nil {
+		o.Errorf("PocketMine command actions failed: %v", err)
+		c.runtime.report(err)
+	}
 }
 
 func (c pmmpCommand) DescribeParams(cmd.Source) []cmd.ParamInfo {
