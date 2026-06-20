@@ -8,12 +8,11 @@ import (
 	"sync"
 	"time"
 
+	dfhost "github.com/bedrock-mc/plugin/shared/dragonflyhost"
 	pmmpcompat "github.com/bedrock-mc/pmmpcompat/host/go"
 	"github.com/df-mc/dragonfly/server"
-	dfblock "github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
-	dfentity "github.com/df-mc/dragonfly/server/entity"
 	dfitem "github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/form"
@@ -50,6 +49,10 @@ type RuntimeClient interface {
 	PlayerState(ctx context.Context, uuid string, state pmmpcompat.PlayerState) (pmmpcompat.PlayerStateResult, []pmmpcompat.Action, error)
 }
 
+type statefulJoinClient interface {
+	PlayerJoinWithState(ctx context.Context, uuid, name string, state pmmpcompat.PlayerState, slots []pmmpcompat.InventorySlot) (pmmpcompat.PlayerJoinResult, []pmmpcompat.Action, error)
+}
+
 type WorldLookup func(name string) (*world.World, bool)
 type ErrorHandler func(error)
 
@@ -79,7 +82,15 @@ func NewRuntime(client RuntimeClient, srv *server.Server, opts RuntimeOptions) *
 func (r *Runtime) RegisterPlayer(ctx context.Context, p *player.Player) (*Handler, error) {
 	h := &Handler{runtime: r, uuid: p.UUID().String(), name: p.Name()}
 	r.setPlayer(p)
-	_, actions, err := r.client.PlayerJoin(ctx, h.uuid, h.name)
+	state := h.playerState(p)
+	slots := h.inventorySlots(p)
+	var actions []pmmpcompat.Action
+	var err error
+	if client, ok := r.client.(statefulJoinClient); ok {
+		_, actions, err = client.PlayerJoinWithState(ctx, h.uuid, h.name, state, slots)
+	} else {
+		_, actions, err = r.client.PlayerJoin(ctx, h.uuid, h.name)
+	}
 	if err != nil {
 		r.deletePlayer(h.uuid)
 		return nil, err
@@ -395,36 +406,33 @@ func (h *Handler) HandleQuit(p *player.Player) {
 }
 
 func (h *Handler) SyncPlayerState(ctx context.Context, p *player.Player) error {
-	pos := p.Position()
-	health := p.Health()
-	maxHealth := p.MaxHealth()
-	level := p.ExperienceLevel()
-	progress := p.ExperienceProgress()
-	gamemode := gameModeName(p.GameMode())
-	_, actions, err := h.runtime.client.PlayerState(ctx, h.uuid, pmmpcompat.PlayerState{
-		Position:   &pmmpcompat.Position{X: pos.X(), Y: pos.Y(), Z: pos.Z(), World: worldName(p.Tx().World())},
-		Health:     &health,
-		MaxHealth:  &maxHealth,
-		Gamemode:   gamemode,
-		XPLevel:    &level,
-		XPProgress: &progress,
-	})
+	state := h.playerState(p)
+	_, actions, err := h.runtime.client.PlayerState(ctx, h.uuid, state)
 	if err != nil {
 		return err
 	}
 	return h.runtime.applyActions(ctx, actions)
 }
 
-func (h *Handler) SyncInventory(ctx context.Context, p *player.Player) error {
-	inv := p.Inventory()
-	slots := make([]pmmpcompat.InventorySlot, 0, 36)
-	for slot := 0; slot < 36; slot++ {
-		stack, err := inv.Item(slot)
-		if err != nil {
-			continue
-		}
-		slots = append(slots, pmmpcompat.InventorySlot{Slot: slot, Item: stackItem(stack)})
+func (h *Handler) playerState(p *player.Player) pmmpcompat.PlayerState {
+	state := dfhost.PlayerStateSnapshot(p, "world")
+	health := state.Health
+	maxHealth := state.MaxHealth
+	level := state.XPLevel
+	progress := state.XPProgress
+	gamemode := state.Gamemode
+	return pmmpcompat.PlayerState{
+		Position:   positionFromHost(state.Position),
+		Health:     &health,
+		MaxHealth:  &maxHealth,
+		Gamemode:   gamemode,
+		XPLevel:    &level,
+		XPProgress: &progress,
 	}
+}
+
+func (h *Handler) SyncInventory(ctx context.Context, p *player.Player) error {
+	slots := h.inventorySlots(p)
 	_, actions, err := h.runtime.client.PlayerInventory(ctx, h.uuid, slots)
 	if err != nil {
 		return err
@@ -432,17 +440,26 @@ func (h *Handler) SyncInventory(ctx context.Context, p *player.Player) error {
 	return h.runtime.applyActions(ctx, actions)
 }
 
+func (h *Handler) inventorySlots(p *player.Player) []pmmpcompat.InventorySlot {
+	hostSlots := dfhost.InventorySlots(p, 36)
+	slots := make([]pmmpcompat.InventorySlot, 0, len(hostSlots))
+	for _, slot := range hostSlots {
+		slots = append(slots, pmmpcompat.InventorySlot{Slot: slot.Slot, Item: itemFromHost(slot.Item)})
+	}
+	return slots
+}
+
 func (h *Handler) position(p *player.Player, pos mgl64.Vec3) pmmpcompat.Position {
-	return pmmpcompat.Position{X: pos.X(), Y: pos.Y(), Z: pos.Z(), World: worldName(p.Tx().World())}
+	return *positionFromHost(dfhost.PlayerPosition(p, pos, "world"))
 }
 
 func (h *Handler) blockPosition(p *player.Player, pos cube.Pos) pmmpcompat.Position {
-	return pmmpcompat.Position{X: float64(pos.X()), Y: float64(pos.Y()), Z: float64(pos.Z()), World: worldName(p.Tx().World())}
+	return *positionFromHost(dfhost.PlayerBlockPosition(p, pos, "world"))
 }
 
 func (h *Handler) block(b world.Block) *pmmpcompat.Block {
 	name, _ := b.EncodeBlock()
-	return &pmmpcompat.Block{TypeID: name, Name: displayName(name)}
+	return &pmmpcompat.Block{TypeID: name, Name: dfhost.DisplayName(name)}
 }
 
 func (h *Handler) heldItem(p *player.Player) *pmmpcompat.InventoryItem {
@@ -452,82 +469,55 @@ func (h *Handler) heldItem(p *player.Player) *pmmpcompat.InventoryItem {
 }
 
 func (h *Handler) damager(src world.DamageSource) (string, string) {
-	switch s := src.(type) {
-	case dfentity.AttackDamageSource:
-		if p, ok := s.Attacker.(*player.Player); ok {
-			return p.UUID().String(), p.Name()
-		}
-	case dfentity.ProjectileDamageSource:
-		if p, ok := s.Owner.(*player.Player); ok {
-			return p.UUID().String(), p.Name()
-		}
+	info := dfhost.DamageSourceSnapshot(src)
+	if info == nil {
+		return "", ""
 	}
-	return "", ""
+	return info.DamagerUUID, info.DamagerName
 }
 
 func stackItem(stack dfitem.Stack) pmmpcompat.InventoryItem {
-	if stack.Empty() {
-		return pmmpcompat.InventoryItem{TypeID: "minecraft:air", Name: "Air", Count: 0}
-	}
-	name, _ := stack.Item().EncodeItem()
-	return pmmpcompat.InventoryItem{TypeID: name, Name: displayName(name), Count: stack.Count()}
+	return itemFromHost(dfhost.ItemStackSnapshot(stack))
 }
 
 func worldName(w *world.World) string {
-	if w == nil {
-		return "world"
-	}
-	return w.Name()
-}
-
-func displayName(typeID string) string {
-	name := strings.TrimPrefix(typeID, "minecraft:")
-	name = strings.ReplaceAll(name, "_", " ")
-	if name == "" {
-		return typeID
-	}
-	return strings.ToUpper(name[:1]) + name[1:]
+	return dfhost.WorldName(w, "world")
 }
 
 func damageCause(src world.DamageSource) int {
-	switch src.(type) {
-	case dfentity.AttackDamageSource:
+	info := dfhost.DamageSourceSnapshot(src)
+	if info == nil {
+		return pmmpCauseCustom
+	}
+	switch info.Kind {
+	case dfhost.DamageKindAttack:
 		return pmmpCauseEntityAttack
-	case dfentity.ProjectileDamageSource:
+	case dfhost.DamageKindProjectile:
 		return 2
-	case dfentity.FallDamageSource, dfentity.GlideDamageSource:
+	case dfhost.DamageKindFall:
 		return pmmpCauseFall
-	case dfentity.VoidDamageSource:
+	case dfhost.DamageKindVoid:
 		return pmmpCauseVoid
-	case dfentity.DrowningDamageSource:
+	case dfhost.DamageKindDrowning:
 		return pmmpCauseDrowning
-	case dfentity.SuffocationDamageSource:
+	case dfhost.DamageKindSuffocate:
 		return 3
-	case dfblock.LavaDamageSource:
+	case dfhost.DamageKindLava:
 		return pmmpCauseLava
-	case dfblock.FireDamageSource:
+	case dfhost.DamageKindFire:
 		return pmmpCauseFire
 	default:
-		if src.Fire() {
+		if info.Fire {
 			return pmmpCauseFire
 		}
 		return pmmpCauseCustom
 	}
 }
 
-func gameModeName(mode world.GameMode) string {
-	id, ok := world.GameModeID(mode)
-	if !ok {
-		return "survival"
-	}
-	switch id {
-	case 1:
-		return "creative"
-	case 2:
-		return "adventure"
-	case 3:
-		return "spectator"
-	default:
-		return "survival"
-	}
+func positionFromHost(pos dfhost.Position) *pmmpcompat.Position {
+	return &pmmpcompat.Position{X: pos.X, Y: pos.Y, Z: pos.Z, World: pos.World}
+}
+
+func itemFromHost(stack dfhost.ItemStack) pmmpcompat.InventoryItem {
+	return pmmpcompat.InventoryItem{TypeID: stack.TypeID, Name: stack.Name, Count: stack.Count}
 }

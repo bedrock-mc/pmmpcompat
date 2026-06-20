@@ -82,10 +82,15 @@ class Runtime
         return $this->plugins;
     }
 
-    public function playerJoin(string $uuid, string $name, ?PlayerBridge $bridge = null): PlayerJoinEvent
+    /** @param array<int, Item> $inventorySlots @param array<string, mixed> $state */
+    public function playerJoin(string $uuid, string $name, ?PlayerBridge $bridge = null, array $state = [], array $inventorySlots = []): PlayerJoinEvent
     {
         $player = new Player($uuid, $name, $bridge);
         $this->server->addPlayer($player);
+        $this->syncPlayerState($uuid, $state);
+        if ($inventorySlots !== []) {
+            $this->syncPlayerInventory($uuid, $inventorySlots);
+        }
         $event = new PlayerJoinEvent($player, "{$player->getName()} joined the game");
         $this->server->getPluginManager()->callEvent($event);
         return $event;

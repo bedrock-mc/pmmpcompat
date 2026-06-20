@@ -109,7 +109,9 @@ function commands(Runtime $runtime): array
 function playerJoin(Runtime $runtime, HostActionQueue $queue, array $payload): array
 {
     $uuid = stringValue($payload, 'uuid');
-    $event = $runtime->playerJoin($uuid, stringValue($payload, 'name'), $queue->forPlayer($uuid));
+    $state = playerStatePayload($payload);
+    $slots = isset($payload['slots']) && is_array($payload['slots']) ? inventorySlots($payload['slots']) : [];
+    $event = $runtime->playerJoin($uuid, stringValue($payload, 'name'), $queue->forPlayer($uuid), $state, $slots);
     return ['player' => playerPayload($uuid, $event->getPlayer()->getName()), 'join_message' => $event->getJoinMessage()];
 }
 
@@ -286,6 +288,13 @@ function optionalBlock(array $payload): ?Block
 /** @return array<string, mixed> */
 function playerState(Runtime $runtime, array $payload): array
 {
+    $state = playerStatePayload($payload);
+    return ['synced' => $runtime->syncPlayerState(stringValue($payload, 'uuid'), $state)];
+}
+
+/** @return array<string, mixed> */
+function playerStatePayload(array $payload): array
+{
     $state = [];
     if (isset($payload['position']) && is_array($payload['position'])) {
         $state['position'] = positionValue($payload, 'position');
@@ -305,7 +314,7 @@ function playerState(Runtime $runtime, array $payload): array
     if (isset($payload['xp_progress']) && is_numeric($payload['xp_progress'])) {
         $state['xp_progress'] = (float) $payload['xp_progress'];
     }
-    return ['synced' => $runtime->syncPlayerState(stringValue($payload, 'uuid'), $state)];
+    return $state;
 }
 
 /** @return array<string, mixed> */

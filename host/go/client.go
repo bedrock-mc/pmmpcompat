@@ -281,6 +281,17 @@ func (c *Client) PlayerJoin(ctx context.Context, uuid, name string) (PlayerJoinR
 	return out, actions, err
 }
 
+func (c *Client) PlayerJoinWithState(ctx context.Context, uuid, name string, state PlayerState, slots []InventorySlot) (PlayerJoinResult, []Action, error) {
+	var out PlayerJoinResult
+	payload := map[string]any{"uuid": uuid, "name": name}
+	addPlayerStatePayload(payload, state)
+	if len(slots) > 0 {
+		payload["slots"] = slots
+	}
+	actions, err := c.call(ctx, "player_join", payload, &out)
+	return out, actions, err
+}
+
 func (c *Client) PlayerQuit(ctx context.Context, uuid, name string) (PlayerQuitResult, []Action, error) {
 	var out PlayerQuitResult
 	actions, err := c.call(ctx, "player_quit", map[string]any{"uuid": uuid, "name": name}, &out)
@@ -388,6 +399,12 @@ func (c *Client) PlayerInventory(ctx context.Context, uuid string, slots []Inven
 func (c *Client) PlayerState(ctx context.Context, uuid string, state PlayerState) (PlayerStateResult, []Action, error) {
 	var out PlayerStateResult
 	payload := map[string]any{"uuid": uuid}
+	addPlayerStatePayload(payload, state)
+	actions, err := c.call(ctx, "player_state", payload, &out)
+	return out, actions, err
+}
+
+func addPlayerStatePayload(payload map[string]any, state PlayerState) {
 	if state.Position != nil {
 		payload["position"] = state.Position
 	}
@@ -406,8 +423,6 @@ func (c *Client) PlayerState(ctx context.Context, uuid string, state PlayerState
 	if state.XPProgress != nil {
 		payload["xp_progress"] = *state.XPProgress
 	}
-	actions, err := c.call(ctx, "player_state", payload, &out)
-	return out, actions, err
 }
 
 func (c *Client) FormResponse(ctx context.Context, uuid string, formID int, data any) (FormResponseResult, []Action, error) {
