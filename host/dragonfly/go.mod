@@ -3,7 +3,7 @@ module github.com/bedrock-mc/pmmpcompat/host/dragonfly
 go 1.26.0
 
 require (
-	github.com/bedrock-mc/plugin/shared/dragonflyhost v0.0.0
+	github.com/bedrock-mc/plugin/shared/dragonflyhost v0.0.0-20260620000942-fd02b6a9570a
 	github.com/bedrock-mc/pmmpcompat/host/go v0.0.0
 	github.com/df-mc/dragonfly v0.10.15-0.20260617164324-7f68b0673dd7
 	github.com/go-gl/mathgl v1.2.0
@@ -34,7 +34,5 @@ require (
 )
 
 replace github.com/bedrock-mc/pmmpcompat/host/go => ../go
-
-replace github.com/bedrock-mc/plugin/shared/dragonflyhost => ../../../bedrock-plugin/shared/dragonflyhost
 
 replace github.com/df-mc/dragonfly => ../../../dragonfly
