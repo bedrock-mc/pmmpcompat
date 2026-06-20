@@ -3,7 +3,9 @@ package dragonfly
 import (
 	"testing"
 
+	pmmpcompat "github.com/bedrock-mc/pmmpcompat/host/go"
 	"github.com/df-mc/dragonfly/server/cmd"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 func TestParsePMMPUsageBuildsCommandParams(t *testing.T) {
@@ -72,5 +74,37 @@ func TestParsePMMPUsageHandlesCommandoFormattedUsage(t *testing.T) {
 	}
 	if len(overloads[1]) != 1 || overloads[1][0].Name != "version" {
 		t.Fatalf("version overload = %#v, want version subcommand only", overloads[1])
+	}
+}
+
+func TestStructuredPMMPOverloadsBuildCommandParams(t *testing.T) {
+	overloads := structuredPMMPOverloads([]pmmpcompat.CommandOverloadInfo{{
+		Parameters: []pmmpcompat.CommandParameterInfo{
+			{Name: "create", TypeName: "subcommand", EnumName: "create", EnumValues: []string{"create"}, Subcommand: true},
+			{Name: "name", Type: 4, TypeName: "string"},
+		},
+	}, {
+		Parameters: []pmmpcompat.CommandParameterInfo{
+			{Name: "sethome", TypeName: "subcommand", EnumName: "sethome", EnumValues: []string{"sethome"}, Subcommand: true},
+			{Name: "position", Type: 6, TypeName: "x y z", Optional: true},
+		},
+	}})
+	if len(overloads) != 2 {
+		t.Fatalf("overloads = %d, want 2", len(overloads))
+	}
+	if got := overloads[0][0]; got.Name != "create" {
+		t.Fatalf("subcommand param = %#v", got)
+	} else if _, ok := got.Value.(cmd.SubCommand); !ok {
+		t.Fatalf("subcommand value = %T, want cmd.SubCommand", got.Value)
+	}
+	if got := overloads[0][1]; got.Name != "name" {
+		t.Fatalf("name param = %#v", got)
+	} else if _, ok := got.Value.(string); !ok {
+		t.Fatalf("name value = %T, want string", got.Value)
+	}
+	if got := overloads[1][1]; got.Name != "position" || !got.Optional {
+		t.Fatalf("position param = %#v", got)
+	} else if _, ok := got.Value.(mgl64.Vec3); !ok {
+		t.Fatalf("position value = %T, want mgl64.Vec3", got.Value)
 	}
 }

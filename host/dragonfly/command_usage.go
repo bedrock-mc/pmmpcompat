@@ -7,6 +7,7 @@ import (
 
 	pmmpcompat "github.com/bedrock-mc/pmmpcompat/host/go"
 	"github.com/df-mc/dragonfly/server/cmd"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 type staticEnum struct {
@@ -18,7 +19,10 @@ func (e staticEnum) Type() string                { return e.typeName }
 func (e staticEnum) Options(cmd.Source) []string { return e.options }
 
 func pmmpCommandRunnables(runtime *Runtime, label string, info pmmpcompat.CommandInfo) []cmd.Runnable {
-	overloads := parsePMMPUsage(info.Name, info.Usage)
+	overloads := structuredPMMPOverloads(info.Overloads)
+	if len(overloads) == 0 {
+		overloads = parsePMMPUsage(info.Name, info.Usage)
+	}
 	if len(overloads) == 0 {
 		return []cmd.Runnable{pmmpCommand{runtime: runtime, label: label}}
 	}
@@ -27,6 +31,67 @@ func pmmpCommandRunnables(runtime *Runtime, label string, info pmmpcompat.Comman
 		runnables = append(runnables, pmmpCommand{runtime: runtime, label: label, params: overload})
 	}
 	return runnables
+}
+
+func structuredPMMPOverloads(overloads []pmmpcompat.CommandOverloadInfo) [][]cmd.ParamInfo {
+	if len(overloads) == 0 {
+		return nil
+	}
+	out := make([][]cmd.ParamInfo, 0, len(overloads))
+	for _, overload := range overloads {
+		if len(overload.Parameters) == 0 {
+			continue
+		}
+		params := make([]cmd.ParamInfo, 0, len(overload.Parameters))
+		used := map[string]int{}
+		for _, parameter := range overload.Parameters {
+			param := structuredPMMPParam(parameter)
+			param.Name = uniqueParamName(param.Name, used)
+			params = append(params, param)
+		}
+		out = append(out, params)
+	}
+	return out
+}
+
+func structuredPMMPParam(parameter pmmpcompat.CommandParameterInfo) cmd.ParamInfo {
+	name := cleanParamName(parameter.Name)
+	if name == "" {
+		name = "value"
+	}
+	value := structuredPMMPParamValue(parameter)
+	return cmd.ParamInfo{Name: name, Value: value, Optional: parameter.Optional}
+}
+
+func structuredPMMPParamValue(parameter pmmpcompat.CommandParameterInfo) any {
+	if parameter.Subcommand {
+		return cmd.SubCommand{}
+	}
+	if len(parameter.EnumValues) > 0 {
+		if len(parameter.EnumValues) == 1 && strings.EqualFold(parameter.EnumValues[0], parameter.Name) {
+			return cmd.SubCommand{}
+		}
+		typeName := parameter.EnumName
+		if typeName == "" {
+			typeName = "Enum:" + cleanParamName(parameter.Name)
+		}
+		return staticEnum{typeName: typeName, options: parameter.EnumValues}
+	}
+	typeName := strings.ToLower(strings.TrimSpace(parameter.TypeName))
+	switch {
+	case parameter.Type == 1 || strings.Contains(typeName, "int") || strings.Contains(typeName, "number"):
+		return int(0)
+	case parameter.Type == 3 || strings.Contains(typeName, "float") || strings.Contains(typeName, "decimal") || strings.Contains(typeName, "double"):
+		return float64(0)
+	case parameter.Type == 5 || strings.Contains(typeName, "target") || strings.Contains(typeName, "player"):
+		return []cmd.Target{}
+	case parameter.Type == 6 || strings.Contains(typeName, "x y z") || strings.Contains(typeName, "position"):
+		return mgl64.Vec3{}
+	case parameter.Type == 7 || strings.Contains(typeName, "text") || strings.Contains(typeName, "raw"):
+		return cmd.Varargs("")
+	default:
+		return ""
+	}
 }
 
 func parsePMMPUsage(name, usage string) [][]cmd.ParamInfo {
