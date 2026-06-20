@@ -3,8 +3,8 @@ module github.com/bedrock-mc/pmmpcompat/host/dragonfly
 go 1.26.0
 
 require (
-	github.com/bedrock-mc/plugin/shared/dragonflyhost v0.0.0-20260620000942-fd02b6a9570a
-	github.com/bedrock-mc/pmmpcompat/host/go v0.0.0
+	github.com/bedrock-mc/plugin/shared/dragonflyhost v0.0.0-20260620010435-b508b1fa94f1
+	github.com/bedrock-mc/pmmpcompat/host/go v0.0.0-20260620004850-bf4cf662a700
 	github.com/df-mc/dragonfly v0.10.15-0.20260617164324-7f68b0673dd7
 	github.com/go-gl/mathgl v1.2.0
 )
@@ -25,14 +25,9 @@ require (
 	github.com/sandertv/go-raknet v1.15.1-0.20260112202637-beca0b10c217 // indirect
 	github.com/sandertv/gophertunnel v1.57.0 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect
-	github.com/zaataylor/cartesian v0.0.0-20221028053253-3b3244d82727 // indirect
 	golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329 // indirect
 	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/net v0.50.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 )
-
-replace github.com/bedrock-mc/pmmpcompat/host/go => ../go
-
-replace github.com/df-mc/dragonfly => ../../../dragonfly
