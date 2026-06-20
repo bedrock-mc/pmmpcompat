@@ -266,7 +266,7 @@ type pmmpCommand struct {
 	Args    cmd.Varargs `cmd:"args"`
 }
 
-func (c pmmpCommand) Run(src cmd.Source, o *cmd.Output, _ *world.Context) {
+func (c pmmpCommand) Run(src cmd.Source, o *cmd.Output, wctx *world.Context) {
 	p, ok := src.(*player.Player)
 	if !ok {
 		o.Errorf("PocketMine commands can only be run by players.")
@@ -275,13 +275,36 @@ func (c pmmpCommand) Run(src cmd.Source, o *cmd.Output, _ *world.Context) {
 	callCtx, cancel := c.runtime.context()
 	defer cancel()
 	rawArgs := strings.Fields(string(c.Args))
-	_, actions, err := c.runtime.client.Command(callCtx, p.UUID().String(), p.Name(), c.label, rawArgs)
+	uuid := p.UUID().String()
+	_, actions, err := c.runtime.client.Command(callCtx, uuid, p.Name(), c.label, rawArgs)
 	if err != nil {
 		o.Errorf("PocketMine command failed: %v", err)
 		c.runtime.report(err)
 		return
 	}
-	if err := c.runtime.applyActionsForPlayer(callCtx, p.UUID().String(), p, actions); err != nil {
+	if wctx != nil {
+		handle := p.H()
+		actions = append([]pmmpcompat.Action(nil), actions...)
+		wctx.Defer(func(wctx *world.Context) {
+			ent, ok := handle.Entity(wctx.Tx())
+			if !ok {
+				c.runtime.report(fmt.Errorf("PMMP command action player is no longer available: %s", uuid))
+				return
+			}
+			p, ok := ent.(*player.Player)
+			if !ok {
+				c.runtime.report(fmt.Errorf("PMMP command action target is %T, not *player.Player", ent))
+				return
+			}
+			applyCtx, applyCancel := c.runtime.context()
+			defer applyCancel()
+			if err := c.runtime.applyActionsForPlayer(applyCtx, uuid, p, actions); err != nil {
+				c.runtime.report(err)
+			}
+		})
+		return
+	}
+	if err := c.runtime.applyActionsForPlayer(callCtx, uuid, p, actions); err != nil {
 		o.Errorf("PocketMine command actions failed: %v", err)
 		c.runtime.report(err)
 	}
