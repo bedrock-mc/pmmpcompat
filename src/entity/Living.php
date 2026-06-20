@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace pocketmine\entity;
 
+use pocketmine\event\entity\EntityDamageEvent;
+
 class Living extends Entity
 {
     public const DEFAULT_KNOCKBACK_FORCE = 0.4;
@@ -17,7 +19,7 @@ class Living extends Entity
     private float $movementSpeed = 0.1;
 
     public function applyDamageModifiers(mixed ...$args): mixed { return null; }
-    public function attack(mixed ...$args): mixed { return null; }
+    public function attack(EntityDamageEvent $source): void { parent::attack($source); }
     public function canBeRenamed(mixed ...$args): bool { return true; }
     public function canBreathe(mixed ...$args): bool { return true; }
     public function consumeObject(mixed ...$args): mixed { return null; }

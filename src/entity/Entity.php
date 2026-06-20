@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace pocketmine\entity;
 
+use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\DoubleTag;
@@ -62,7 +63,7 @@ class Entity
     public function __destruct() {}
     public function __toString(): string { return static::class . '(' . $this->id . ')'; }
     public function addMotion(mixed ...$args): mixed { $this->motion = $this->motion->add((float) ($args[0] ?? 0.0), (float) ($args[1] ?? 0.0), (float) ($args[2] ?? 0.0)); return null; }
-    public function attack(mixed ...$args): mixed { return null; }
+    public function attack(EntityDamageEvent $source): void { $this->lastDamageCause = $source; }
     public function broadcastAnimation(mixed ...$args): mixed { return null; }
     public function broadcastSound(mixed ...$args): mixed { return null; }
     public function canBeCollidedWith(mixed ...$args): mixed { return !$this->closed; }

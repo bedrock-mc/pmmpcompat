@@ -6,6 +6,7 @@ namespace pocketmine\entity\projectile;
 
 use pocketmine\entity\Entity;
 use pocketmine\entity\Location;
+use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\IntTag;
@@ -80,7 +81,7 @@ class Projectile extends Entity
         $this->blockHit = $blockHit;
     }
 
-    public function attack(mixed ...$args): mixed { return null; }
+    public function attack(EntityDamageEvent $source): void { parent::attack($source); }
     public function canBeCollidedWith(mixed ...$args): bool { return false; }
     public function canCollideWith(mixed ...$args): bool { return true; }
     public function hasMovementUpdate(mixed ...$args): bool { return $this->blockHit === null; }

@@ -6,6 +6,7 @@ namespace PmmpCompat\Tests;
 
 use PHPUnit\Framework\TestCase;
 use pocketmine\block\VanillaBlocks;
+use pocketmine\entity\Entity;
 use pocketmine\event\Listener;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
@@ -277,6 +278,25 @@ PHP);
         $damage = new EntityDamageByEntityEvent($player, new \stdClass(), EntityDamageEvent::CAUSE_ENTITY_ATTACK, 4.0);
         self::assertSame($player, $damage->getDamager());
         self::assertSame(4.0, $damage->getFinalDamage());
+    }
+
+    public function testEntityAttackSignatureMatchesPocketMineOverrides(): void
+    {
+        $entity = new class extends Entity {
+            public ?EntityDamageEvent $source = null;
+
+            public function attack(EntityDamageEvent $source): void
+            {
+                $this->source = $source;
+                parent::attack($source);
+            }
+        };
+        $damage = new EntityDamageEvent($entity, 1.0, EntityDamageEvent::CAUSE_CUSTOM);
+
+        $entity->attack($damage);
+
+        self::assertSame($damage, $entity->source);
+        self::assertSame($damage, $entity->getLastDamageCause());
     }
 
     public function testDirectoryLoadSortsDependencies(): void

@@ -8,6 +8,7 @@ use pocketmine\block\Block;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Location;
+use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\item\Item;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
@@ -34,7 +35,7 @@ class FallingBlock extends Entity
         parent::__construct($location, $nbt);
     }
 
-    public function attack(mixed ...$args): mixed { return null; }
+    public function attack(EntityDamageEvent $source): void { parent::attack($source); }
     public function canBeMovedByCurrents(mixed ...$args): bool { return false; }
     public function canCollideWith(mixed ...$args): bool { return false; }
     public function getBlock(mixed ...$args): Block { return clone $this->block; }

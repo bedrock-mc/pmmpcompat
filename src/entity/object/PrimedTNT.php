@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace pocketmine\entity\object;
 
 use pocketmine\entity\Entity;
+use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\item\Item;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
@@ -15,7 +16,7 @@ class PrimedTNT extends Entity
     private bool $worksUnderwater = false;
     private bool $exploded = false;
 
-    public function attack(mixed ...$args): mixed { return null; }
+    public function attack(EntityDamageEvent $source): void { parent::attack($source); }
     public function canCollideWith(mixed ...$args): bool { return false; }
     public function explode(mixed ...$args): void
     {

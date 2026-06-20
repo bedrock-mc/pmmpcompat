@@ -404,7 +404,7 @@ class Player implements CommandSender
     public function dropItem(Item $item): bool { return false; }
     public function pickBlock(mixed ...$args): bool { return false; }
     public function pickEntity(mixed ...$args): bool { return false; }
-    public function attack(mixed ...$args): bool { return false; }
+    public function attack(EntityDamageEvent $source): void { $this->lastDamageCause = $source; }
     public function attackBlock(mixed ...$args): bool { return false; }
     public function attackEntity(mixed ...$args): bool { return false; }
     public function breakBlock(mixed ...$args): bool { return false; }
