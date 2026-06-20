@@ -3,7 +3,7 @@ module github.com/bedrock-mc/pmmpcompat/cmd/example
 go 1.26.0
 
 require (
-	github.com/bedrock-mc/pmmpcompat/host/dragonfly v0.0.0-20260620023938-dec29bac28b4
+	github.com/bedrock-mc/pmmpcompat/host/dragonfly v0.0.0-20260620030624-bce1807fa784
 	github.com/bedrock-mc/pmmpcompat/host/go v0.0.0-20260620023258-23f86ad51308
 	github.com/df-mc/dragonfly v0.10.15-0.20260617164324-7f68b0673dd7
 )
