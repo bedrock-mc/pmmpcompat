@@ -104,7 +104,8 @@ func run() error {
 	srv := cfg.New()
 	srv.CloseOnProgramEnd()
 
-	rt := dfcompat.NewRuntime(client, srv, dfcompat.RuntimeOptions{
+	bridgeClient := &loggingRuntimeClient{Client: client, log: log}
+	rt := dfcompat.NewRuntime(bridgeClient, srv, dfcompat.RuntimeOptions{
 		Options: dfcompat.Options{
 			ItemMapper:         dfcompat.DefaultItemMapper,
 			HealthSetter:       dfcompat.EventedHealthSetter,
@@ -142,6 +143,7 @@ func run() error {
 			}
 			p.Schedule(func(p *player.Player, _ *world.Context) {
 				p.Handle(h)
+				log.Debug("PMMP bridge handler installed", "player", p.Name(), "uuid", p.UUID())
 			})
 			log.Info("player bridged", "player", p.Name(), "uuid", p.UUID())
 		}()
@@ -188,6 +190,36 @@ func worldLookup(srv *server.Server) dfcompat.WorldLookup {
 		}
 		return nil, false
 	}
+}
+
+type loggingRuntimeClient struct {
+	*pmmpcompat.Client
+	log *slog.Logger
+}
+
+func (c *loggingRuntimeClient) Commands(ctx context.Context) (pmmpcompat.CommandsResult, []pmmpcompat.Action, error) {
+	result, actions, err := c.Client.Commands(ctx)
+	if err != nil {
+		c.log.Debug("PMMP commands failed", "err", err)
+		return result, actions, err
+	}
+	summary := make([]string, 0, len(result.Commands))
+	for _, command := range result.Commands {
+		summary = append(summary, fmt.Sprintf("%s(overloads=%d usage=%q)", command.Name, len(command.Overloads), command.Usage))
+	}
+	c.log.Debug("PMMP commands loaded", "count", len(result.Commands), "commands", summary)
+	return result, actions, nil
+}
+
+func (c *loggingRuntimeClient) Command(ctx context.Context, uuid, name, command string, args []string) (pmmpcompat.CommandResult, []pmmpcompat.Action, error) {
+	c.log.Debug("PMMP command dispatch", "player", name, "uuid", uuid, "command", command, "args", args)
+	result, actions, err := c.Client.Command(ctx, uuid, name, command, args)
+	if err != nil {
+		c.log.Debug("PMMP command failed", "player", name, "uuid", uuid, "command", command, "args", args, "err", err)
+		return result, actions, err
+	}
+	c.log.Debug("PMMP command result", "player", name, "uuid", uuid, "command", command, "args", args, "handled", result.Handled, "actions", len(actions))
+	return result, actions, nil
 }
 
 func logAllowFlight(log *slog.Logger) dfcompat.AllowFlightSetter {
