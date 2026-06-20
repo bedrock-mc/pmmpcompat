@@ -17,6 +17,16 @@ use pocketmine\Server;
 use pocketmine\world\Position;
 use pocketmine\world\World;
 
+ini_set('display_errors', 'stderr');
+set_error_handler(static function (int $severity, string $message, string $file, int $line): bool {
+    if ((error_reporting() & $severity) === 0) {
+        return false;
+    }
+    fwrite(STDERR, errorSeverityName($severity) . ": {$message} in {$file} on line {$line}\n");
+    return true;
+});
+ob_start();
+
 $pluginsDir = $argv[1] ?? getcwd() . DIRECTORY_SEPARATOR . 'plugins';
 $queue = new HostActionQueue();
 $runtime = new Runtime($pluginsDir, new Server($queue));
@@ -35,11 +45,20 @@ while (($line = fgets(STDIN)) !== false) {
     $id = $request['id'] ?? null;
     try {
         $result = handleRequest($runtime, $queue, $request);
+        flushRuntimeOutput();
         fwrite(STDOUT, json_encode(['id' => $id, 'ok' => true, 'result' => $result, 'actions' => $queue->drain()]) . "\n");
     } catch (Throwable $e) {
+        flushRuntimeOutput();
         fwrite(STDOUT, json_encode(['id' => $id, 'ok' => false, 'error' => $e->getMessage(), 'actions' => $queue->drain()]) . "\n");
     }
     fflush(STDOUT);
+}
+
+try {
+    $runtime->shutdown();
+    flushRuntimeOutput();
+} catch (Throwable $e) {
+    fwrite(STDERR, "Runtime shutdown failed: {$e->getMessage()}\n");
 }
 
 /** @param array<string, mixed> $request @return array<string, mixed> */
@@ -410,6 +429,29 @@ function blockPayload(Block $block): array
 function messageText(Translatable|string $message): string
 {
     return $message instanceof Translatable ? $message->getText() : $message;
+}
+
+function flushRuntimeOutput(): void
+{
+    $output = ob_get_contents();
+    if ($output !== false && $output !== '') {
+        ob_clean();
+        fwrite(STDERR, $output);
+    }
+}
+
+function errorSeverityName(int $severity): string
+{
+    return match ($severity) {
+        E_WARNING => 'Warning',
+        E_NOTICE => 'Notice',
+        E_USER_ERROR => 'User Error',
+        E_USER_WARNING => 'User Warning',
+        E_USER_NOTICE => 'User Notice',
+        E_DEPRECATED => 'Deprecated',
+        E_USER_DEPRECATED => 'User Deprecated',
+        default => 'PHP Error',
+    };
 }
 
 /** @return list<array{x: int, y: int, z: int, block: array<string, mixed>}> */

@@ -10,6 +10,14 @@ if (is_file($composerAutoload)) {
 }
 
 spl_autoload_register(static function (string $class): void {
+    $overrides = [
+        'cooldogedev\\BedrockEconomy\\libs\\cooldogedev\\libSQL\\context\\ClosureContext' => __DIR__ . '/src/compat/overrides/BedrockEconomyClosureContext.php',
+    ];
+    if (isset($overrides[$class])) {
+        require $overrides[$class];
+        return;
+    }
+
     $prefixes = [
         'pocketmine\\' => __DIR__ . '/src/',
         'pmmp\\thread\\' => __DIR__ . '/src/pmmp/thread/',
